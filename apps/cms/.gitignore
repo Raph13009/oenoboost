@@ -1,0 +1,16 @@
+node_modules
+.env
+.env.local
+.DS_Store
+.cursor/mcp.json
+.next
+tsconfig.tsbuildinfo
+
+# Local heavy data artifacts
+appellations_raw.json
+appellations_clean.json
+data/aoc/*.shp
+data/aoc/*.dbf
+data/aoc/*.shx
+data/aoc/*.prj
+data/aoc/*.cpg

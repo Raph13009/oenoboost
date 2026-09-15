@@ -1,0 +1,48 @@
+{
+  "name": "oenoboost-1",
+  "version": "1.0.0",
+  "description": "OenoBoost Admin CMS (Next.js 14)",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "node --test --experimental-strip-types \"**/*.test.ts\""
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^3.9.0",
+    "@supabase/supabase-js": "^2.99.1",
+    "@tanstack/react-table": "^8.20.5",
+    "@tiptap/extension-link": "^3.26.0",
+    "@tiptap/extension-placeholder": "^3.20.4",
+    "@tiptap/extension-underline": "^3.26.0",
+    "@tiptap/react": "^3.20.4",
+    "@tiptap/starter-kit": "^3.20.4",
+    "@turf/turf": "^7.3.4",
+    "bcryptjs": "^3.0.3",
+    "clsx": "^2.1.1",
+    "dotenv": "^17.3.1",
+    "isomorphic-dompurify": "^3.4.0",
+    "lucide-react": "^0.453.0",
+    "mapbox-gl": "^3.20.0",
+    "next": "14.2.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.53.0",
+    "react-markdown": "^10.1.0",
+    "tailwind-merge": "^2.5.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0",
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "14.2.5",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5.6.3"
+  }
+}
