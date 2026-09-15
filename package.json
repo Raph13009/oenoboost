@@ -1,0 +1,16 @@
+{
+    "name": "oenoboost",
+    "version": "1.0.0",
+    "private": true,
+    "workspaces": [
+      "apps/web",
+      "apps/cms"
+    ],
+    "scripts": {
+      "dev:web": "npm --workspace apps/web run dev",
+      "dev:cms": "npm --workspace apps/cms run dev",
+      "build:web": "npm --workspace apps/web run build",
+      "build:cms": "npm --workspace apps/cms run build",
+      "build": "npm run build:web && npm run build:cms"
+    }
+  }
