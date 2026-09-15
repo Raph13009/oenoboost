@@ -1,0 +1,74 @@
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+
+import type { Locale } from "@/lib/i18n/config";
+
+export type CurrentUser = {
+  id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+  role: string;
+  plan: string;
+  level: string;
+  xp: number;
+  locale: Locale;
+};
+
+export async function getCurrentUser(): Promise<CurrentUser | null> {
+  const supabase = await createClient();
+  const {
+    data: { user: authUser },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !authUser) return null;
+
+  // Read the user row through the cookie-bound anon client so RLS still
+  // applies — service-role bypasses RLS and is the wrong client for a
+  // per-request lookup of the calling user's own profile.
+  const { data, error } = await supabase
+    .from("users")
+    .select(
+      "id, email, first_name, last_name, avatar_url, role, plan, level, xp, is_verified, locale",
+    )
+    .eq("id", authUser.id)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (error) return null;
+  if (!data) {
+    return {
+      id: authUser.id,
+      email: authUser.email ?? "",
+      first_name: (authUser.user_metadata?.first_name as string | undefined) ?? null,
+      last_name: (authUser.user_metadata?.last_name as string | undefined) ?? null,
+      avatar_url: null,
+      role: "user",
+      plan: "free",
+      level: "0",
+      xp: 0,
+      locale: "fr",
+    };
+  }
+
+  return {
+    id: data.id,
+    email: data.email,
+    first_name: data.first_name,
+    last_name: data.last_name,
+    avatar_url: data.avatar_url,
+    role: data.role,
+    plan: data.plan,
+    level: data.level,
+    xp: typeof data.xp === "number" ? data.xp : 0,
+    locale: (data.locale as Locale) || "fr",
+  };
+}
+
+export async function requireUser(): Promise<CurrentUser> {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+  return user;
+}
