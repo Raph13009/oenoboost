@@ -150,6 +150,11 @@ export function VignobleMap({
 
   const camera = useMapCamera(map, { franceBounds });
   const cameraRef = useRef<ReturnType<typeof useMapCamera> | null>(null);
+  const subregionsClickRef = useRef<(id: string) => void>(() => {});
+  const subregionsRef = useRef<ReturnType<typeof useSubregionLayer> | null>(
+    null,
+  );
+  const aopRef = useRef<ReturnType<typeof useAopLayer> | null>(null);
 
   useRegionLayer(map, {
     geojson: regionGeojson,
@@ -225,17 +230,6 @@ export function VignobleMap({
   );
 
   const aop = useAopLayer(map, { onClickAop: handleAopClick });
-
-  // Latest-ref for the map-click handler. The subregion hook only attaches its
-  // click handler once; we keep the orchestrator's current callback live via a
-  // ref so it can close over up-to-date hook state.
-  const subregionsClickRef = useRef<(id: string) => void>(() => {});
-  // Latest-ref to the subregions API so handleAopClick can clear the
-  // subregion selection without re-binding when the API identity changes.
-  const subregionsRef = useRef<ReturnType<typeof useSubregionLayer> | null>(
-    null,
-  );
-  const aopRef = useRef<ReturnType<typeof useAopLayer> | null>(null);
 
   const subregions = useSubregionLayer(map, {
     locale,

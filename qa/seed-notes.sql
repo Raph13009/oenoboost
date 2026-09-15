@@ -1,0 +1,19 @@
+-- Optional seed notes for a dedicated QA Supabase project.
+-- Do NOT run against production.
+--
+-- Prefer creating disposable accounts via Auth dashboard / Admin API:
+--   free:    QA_FREE_EMAIL / QA_FREE_PASSWORD   (users.plan = 'free')
+--   premium: QA_PREMIUM_EMAIL / QA_PREMIUM_PASSWORD (users.plan = 'premium')
+--
+-- CMS uses the HMAC test cookie (user id `test`) — no DB admin row required
+-- when ADMIN_SESSION_SECRET (or service role fallback) matches the running CMS.
+--
+-- Lock fixture slugs in `.env.qa`:
+--   QA_FIXTURE_REGION_SLUG=...
+--   QA_FIXTURE_AOP_SLUG=...
+--   QA_FIXTURE_GRAPE_SLUG=...
+--   QA_FIXTURE_SOIL_SLUG=...
+--   QA_FIXTURE_VINIFICATION_SLUG=...
+--
+-- Until a dedicated project exists, Playwright discovers published rows
+-- read-only from the configured Supabase project.

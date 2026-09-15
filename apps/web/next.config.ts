@@ -1,4 +1,7 @@
 import type { NextConfig } from "next";
+import path from "node:path";
+
+const workspaceRoot = path.join(__dirname, "../..");
 
 function supabaseImageHost(): string | null {
   const raw = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -13,6 +16,19 @@ function supabaseImageHost(): string | null {
 const supabaseHost = supabaseImageHost();
 
 const nextConfig: NextConfig = {
+  // Keep file tracing rooted at the monorepo so Next does not guess wrong
+  // when multiple lockfiles exist.
+  outputFileTracingRoot: workspaceRoot,
+  // Pin React to this app's copies so Pages Router /404 prerender does not
+  // mix CMS React 18 (hoisted) with this app's React 19.
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      react: path.join(__dirname, "node_modules/react"),
+      "react-dom": path.join(__dirname, "node_modules/react-dom"),
+    };
+    return config;
+  },
   async rewrites() {
     return [
       { source: "/favicon.ico", destination: "/favicon/favicon.ico" },

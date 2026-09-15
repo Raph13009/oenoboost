@@ -31,7 +31,9 @@ export function useMapboxMap(
   options: UseMapboxMapOptions,
 ): UseMapboxMapResult {
   const [map, setMap] = useState<any | null>(null);
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(
+    () => !process.env.NEXT_PUBLIC_MAPBOX_TOKEN,
+  );
 
   const optionsRef = useRef(options);
   useEffect(() => {
@@ -44,7 +46,6 @@ export function useMapboxMap(
     const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
     if (!token) {
       console.error("Missing NEXT_PUBLIC_MAPBOX_TOKEN");
-      setReady(true);
       return;
     }
 

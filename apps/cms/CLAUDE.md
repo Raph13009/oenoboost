@@ -20,16 +20,16 @@ The CMS does NOT inherit the public app's wine-editorial design system (`#7C2736
 npm run dev          # next dev (default port 3000)
 npm run build        # next build
 npm run lint         # next lint (eslint-config-next)
-npm test             # node --test --experimental-strip-types "**/*.test.ts"
+npm test             # tsx --test on colocated *.test.ts files
 ```
 
 Tests are colocated as `*.test.ts` next to the unit they cover (e.g. `app/admin/(cms)/appellations/link-sync.test.ts`). Run a single test:
 
 ```bash
-node --test --experimental-strip-types app/admin/(cms)/appellations/link-sync.test.ts
+npx tsx --test app/admin/(cms)/appellations/link-sync.test.ts
 ```
 
-There is no Vitest/Jest runner; the project uses Node's built-in test runner and TypeScript stripping. Tests must avoid framework-specific imports (use `node:test` and `node:assert/strict`).
+There is no Vitest/Jest runner; the project uses Node's built-in test runner via `tsx`. Tests must avoid framework-specific imports (use `node:test` and `node:assert/strict`).
 
 ### Admin bootstrap
 

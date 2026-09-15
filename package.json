@@ -1,16 +1,39 @@
 {
-    "name": "oenoboost",
-    "version": "1.0.0",
-    "private": true,
-    "workspaces": [
-      "apps/web",
-      "apps/cms"
-    ],
-    "scripts": {
-      "dev:web": "npm --workspace apps/web run dev",
-      "dev:cms": "npm --workspace apps/cms run dev",
-      "build:web": "npm --workspace apps/web run build",
-      "build:cms": "npm --workspace apps/cms run build",
-      "build": "npm run build:web && npm run build:cms"
-    }
+  "name": "oenoboost",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "apps/cms"
+  ],
+  "scripts": {
+    "dev:web": "npm --workspace apps/web run dev -- -p 3000",
+    "dev:cms": "npm --workspace apps/cms run dev -- -p 3001",
+    "build:web": "npm --workspace apps/web run build",
+    "build:cms": "npm --workspace apps/cms run build",
+    "build": "npm run build:web && npm run build:cms",
+    "lint:web": "npm --workspace apps/web run lint",
+    "lint:cms": "npm --workspace apps/cms run lint",
+    "lint": "npm run lint:web && npm run lint:cms",
+    "typecheck:web": "npm --workspace apps/web exec tsc -- --noEmit",
+    "typecheck:cms": "npm --workspace apps/cms exec tsc -- --noEmit",
+    "typecheck": "npm run typecheck:web && npm run typecheck:cms",
+    "test:unit:web": "npm --workspace apps/web run test",
+    "test:unit:cms": "npm --workspace apps/cms run test",
+    "test:unit": "npm run test:unit:web && npm run test:unit:cms",
+    "qa:db": "node qa/db-check.mjs",
+    "qa:smoke": "playwright test --grep @smoke",
+    "qa:app": "playwright test tests/e2e/app tests/regression/app",
+    "qa:cms": "playwright test tests/e2e/cms tests/regression/cms",
+    "qa:regression": "playwright test tests/regression",
+    "qa:health": "playwright test tests/e2e/app/content-health.spec.ts",
+    "qa:e2e": "playwright test",
+    "qa:report": "node qa/report.mjs",
+    "qa:full": "node qa/run-full.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@supabase/supabase-js": "^2.100.0",
+    "dotenv": "^17.3.1"
   }
+}
