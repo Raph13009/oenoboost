@@ -21,6 +21,7 @@ import { GrapeFavoriteButton } from "@/features/cepages/components/grape-favorit
 import type { GrapeFavoriteLabels } from "@/features/cepages/components/grape-favorite-button";
 import { AppellationFavoriteButton } from "@/features/vignoble/components/appellation-favorite-button";
 import type { AppellationFavoriteLabels } from "@/features/vignoble/components/appellation-favorite-button";
+import { buildAopDetailHref } from "@/features/vignoble/lib/aop-slug";
 import { SoilFavoriteButton } from "@/features/sols/components/soil-favorite-button";
 import type { SoilFavoriteLabels } from "@/features/sols/components/soil-favorite-button";
 import { DailyQuestionCta } from "@/features/quiz/components/daily-question-cta";
@@ -366,9 +367,14 @@ export default async function HomePage() {
               }
 
               if (item.type === "aop") {
-                const href = `/vignoble/${item.row.regionSlug}/${item.row.appellation.slug}?subregion=${encodeURIComponent(
-                  item.row.subregionSlug,
-                )}&from=favorites`;
+                const href = buildAopDetailHref(
+                  item.row.regionSlug,
+                  item.row.appellation.slug,
+                  {
+                    subregion: item.row.subregionSlug,
+                    from: "favorites",
+                  },
+                );
                 const name = item.row.appellation.name;
 
                 return (

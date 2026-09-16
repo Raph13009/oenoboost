@@ -6,6 +6,7 @@ import type { SoilFavoriteLabels } from "./soil-favorite-button";
 import { SoilFavoriteButton } from "./soil-favorite-button";
 import { SoilCoverImage } from "./soil-cover-image";
 import { PremiumGate } from "@/components/shared/premium-gate";
+import { buildAopDetailHref } from "@/features/vignoble/lib/aop-slug";
 
 type SoilDetailProps = {
   locale: Locale;
@@ -48,7 +49,7 @@ function DetailSection({
 }
 
 export function SoilDetail({
-  locale,
+  locale: _locale,
   soil,
   relatedAops,
   emptyRelatedAopsLabel,
@@ -57,6 +58,7 @@ export function SoilDetail({
   userPlan,
   labels,
 }: SoilDetailProps) {
+  void _locale;
   const textClass = "whitespace-pre-line leading-relaxed";
 
   return (
@@ -124,11 +126,11 @@ export function SoilDetail({
             <ul className="flex flex-col gap-3">
               {relatedAops.map((aop) => {
                 const name = aop.name;
-                const qp = new URLSearchParams();
-                qp.set("subregion", aop.subregion_slug);
-                qp.set("from", "soil");
-                qp.set("soilSlug", soil.slug);
-                const href = `/vignoble/${aop.region_slug}/${aop.slug}?${qp.toString()}`;
+                const href = buildAopDetailHref(aop.region_slug, aop.slug, {
+                  subregion: aop.subregion_slug,
+                  from: "soil",
+                  soilSlug: soil.slug,
+                });
                 return (
                   <li key={aop.id}>
                     <Link
