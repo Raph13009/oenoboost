@@ -83,4 +83,20 @@ test.describe("App smoke @smoke", () => {
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     assertNoHardCrashes(probe);
   });
+
+  test("vinification fiche opens from module carousel", async ({ page }) => {
+    const fixtures = await loadFixtures();
+    test.skip(!fixtures.vinificationSlug, "No vinification fixture");
+    const probe = attachErrorProbe(page);
+    await page.goto("/vinification");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+
+    const card = page.locator(`a[href="/vinification/${fixtures.vinificationSlug}"]`);
+    await expect(card).toBeVisible();
+    await card.click();
+
+    await expect(page).toHaveURL(new RegExp(`/vinification/${fixtures.vinificationSlug}`));
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    assertNoHardCrashes(probe);
+  });
 });
