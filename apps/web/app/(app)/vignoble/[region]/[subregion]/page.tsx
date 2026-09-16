@@ -7,6 +7,7 @@ import { getAppellations } from "@/features/vignoble/queries/appellations.querie
 import { AppellationCard } from "@/features/vignoble/components/appellation-card";
 import { AppellationDetail } from "@/features/vignoble/components/appellation-detail";
 import { getAopDetailByRegionAndSlug } from "@/features/vignoble/queries/aop-navigation.queries";
+import { decodeRouteSlug } from "@/features/vignoble/lib/aop-slug";
 import { isAppellationFavorited } from "@/features/vignoble/queries/aop-favorites.queries";
 import { getFavoritedContentIds } from "@/features/favorites/queries/favorites.queries";
 import { getServerLocale } from "@/lib/i18n/server";
@@ -33,7 +34,8 @@ export default async function RegionSubregionOrAopPage({
   params,
   searchParams,
 }: Props) {
-  const { region: regionSlug, subregion: slug } = await params;
+  const { region: regionSlug, subregion: rawSlug } = await params;
+  const slug = decodeRouteSlug(rawSlug);
   const qp = (await searchParams) ?? {};
   const locale = await getServerLocale();
   const dict = await getDictionary(locale);

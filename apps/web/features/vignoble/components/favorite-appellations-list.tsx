@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { MapPin, X } from "lucide-react";
 
+import { buildAopDetailHref } from "@/features/vignoble/lib/aop-slug";
 import { toggleAppellationFavoriteAction } from "@/features/vignoble/actions/appellation-favorite-actions";
 import type { FavoriteAppellationRow } from "@/features/vignoble/queries/aop-favorites.queries";
 import type { Locale } from "@/lib/i18n/config";
@@ -22,10 +23,8 @@ type Props = {
 
 export function FavoriteAppellationsList({
   initialItems,
-  // locale retained for future formatting; name is single-column so unused.
-  locale: _locale,
   labels,
-}: Props) {
+}: Omit<Props, "locale"> & { locale?: Locale }) {
   const router = useRouter();
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -48,7 +47,10 @@ export function FavoriteAppellationsList({
     <ul className="flex flex-col gap-3">
       {initialItems.map((row) => {
         const name = row.appellation.name;
-        const href = `/vignoble/${row.regionSlug}/${row.appellation.slug}?subregion=${encodeURIComponent(row.subregionSlug)}&from=favorites`;
+        const href = buildAopDetailHref(row.regionSlug, row.appellation.slug, {
+          subregion: row.subregionSlug,
+          from: "favorites",
+        });
         return (
           <li
             key={row.favoriteId}

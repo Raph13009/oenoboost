@@ -54,12 +54,14 @@ export function AppellationDetail({
   const climate = getContent(appellation, "climate", locale).trim();
   const showClimate = climate.length > 0;
   const na = "...";
-  const formatNumber = (value: number | null) =>
-    value === null ? na : Number(value).toLocaleString(locale);
+  const formatNumber = (value: number | null | undefined) =>
+    value == null || Number.isNaN(Number(value))
+      ? na
+      : Number(value).toLocaleString(locale);
   // Recognition year is a plain year (e.g. 1936) — render it as-is, without
   // the thousands separator that `toLocaleString` would add.
-  const formatYear = (value: number | null) =>
-    value === null ? na : String(value);
+  const formatYear = (value: number | null | undefined) =>
+    value == null || Number.isNaN(Number(value)) ? na : String(value);
   const formatPriceRange = () => {
     if (
       appellation.price_range_min_eur === null ||

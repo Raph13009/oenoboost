@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { resolveAopSlugCandidates } from "../lib/aop-slug";
 import type { Appellation } from "../types";
 
 const AOP_COLUMNS =
@@ -38,19 +39,21 @@ export async function getAppellationBySlug(
   slug: string,
 ): Promise<Appellation | null> {
   const supabase = await createClient();
+  const candidates = resolveAopSlugCandidates(slug);
 
-  const query = supabase
-    .from("aop")
-    .select(AOP_COLUMNS)
-    .eq("slug", slug)
-    .is("deleted_at", null);
+  for (const candidate of candidates) {
+    const { data, error } = await supabase
+      .from("aop")
+      .select(AOP_COLUMNS)
+      .eq("slug", candidate)
+      .is("deleted_at", null)
+      .maybeSingle();
 
-  const { data, error } = await query.single();
-
-  if (error) {
-    if (error.code === "PGRST116") return null;
-    throw new Error(`Failed to fetch appellation: ${error.message}`);
+    if (error) {
+      throw new Error(`Failed to fetch appellation: ${error.message}`);
+    }
+    if (data) return data as Appellation;
   }
 
-  return data as Appellation;
+  return null;
 }

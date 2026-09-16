@@ -7,6 +7,7 @@ import {
   normalizeSubregionIds,
   validatePublishedAppellationLinkState,
 } from "./link-sync";
+import { slugifyAopSlug } from "@/lib/aop-slug";
 import { validateRecognitionYear } from "@/lib/aop-recognition-year";
 import { validateWineColorBreakdown } from "@/lib/aop-wine-color-breakdown";
 
@@ -435,7 +436,7 @@ type AppellationForm = Omit<
 
 function formToRow(form: AppellationForm): Record<string, unknown> {
   return {
-    slug: form.slug || null,
+    slug: slugifyAopSlug(form.slug || form.name) || null,
     name: form.name || "",
     area_hectares: form.area_hectares ?? null,
     recognition_year: form.recognition_year ?? null,

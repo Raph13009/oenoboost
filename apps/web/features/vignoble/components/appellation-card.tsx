@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import type { Appellation } from "../types";
 import type { Locale } from "@/lib/i18n/config";
+import { buildAopDetailHref } from "../lib/aop-slug";
 import type { AppellationFavoriteLabels } from "./appellation-favorite-button";
 import { AppellationFavoriteButton } from "./appellation-favorite-button";
 
@@ -27,7 +28,9 @@ export function AppellationCard({
   favoriteLabels,
 }: AppellationCardProps) {
   const name = appellation.name;
-  const href = `/vignoble/${regionSlug}/${appellation.slug}?subregion=${encodeURIComponent(subregionSlug)}`;
+  const href = buildAopDetailHref(regionSlug, appellation.slug, {
+    subregion: subregionSlug,
+  });
 
   return (
     <div className="group flex items-stretch overflow-hidden rounded-xl border border-border bg-card transition-all duration-200 hover:border-wine/20 hover:shadow-sm">
