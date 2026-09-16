@@ -2,91 +2,90 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  applyWineColorPctChange,
   hasWineColorBreakdownData,
   validateWineColorBreakdown,
   wineColorBreakdownTotal,
+  type WineColorBreakdown,
 } from "./aop-wine-color-breakdown";
+
+function pct(
+  red: number | null,
+  rose: number | null,
+  white: number | null,
+  sparkling: number | null,
+  liqueur: number | null,
+): WineColorBreakdown {
+  return {
+    wine_pct_red: red,
+    wine_pct_rose: rose,
+    wine_pct_white: white,
+    wine_pct_sparkling: sparkling,
+    wine_pct_liqueur: liqueur,
+  };
+}
 
 describe("validateWineColorBreakdown", () => {
   it("accepts all-null breakdown", () => {
-    assert.equal(
-      validateWineColorBreakdown({
-        wine_pct_red: null,
-        wine_pct_rose: null,
-        wine_pct_white: null,
-        wine_pct_sparkling: null,
-        wine_pct_liqueur: null,
-      }),
-      null,
-    );
+    assert.equal(validateWineColorBreakdown(pct(null, null, null, null, null)), null);
   });
 
   it("accepts five shares summing to 100", () => {
-    assert.equal(
-      validateWineColorBreakdown({
-        wine_pct_red: 60,
-        wine_pct_rose: 10,
-        wine_pct_white: 25,
-        wine_pct_sparkling: 5,
-        wine_pct_liqueur: 0,
-      }),
-      null,
-    );
+    assert.equal(validateWineColorBreakdown(pct(60, 10, 25, 5, 0)), null);
+  });
+
+  it("accepts totals below 100", () => {
+    assert.equal(validateWineColorBreakdown(pct(20, 20, 20, 20, 19)), null);
   });
 
   it("rejects partial data with missing rosé", () => {
-    assert.match(
-      validateWineColorBreakdown({
-        wine_pct_red: 70,
-        wine_pct_rose: null,
-        wine_pct_white: 30,
-        wine_pct_sparkling: 0,
-        wine_pct_liqueur: 0,
-      }) ?? "",
-      /cinq pourcentages/,
+    assert.match(validateWineColorBreakdown(pct(70, null, 30, 0, 0)) ?? "", /cinq pourcentages/);
+  });
+
+  it("rejects totals over 100", () => {
+    assert.match(validateWineColorBreakdown(pct(40, 30, 20, 10, 1)) ?? "", /100 %/);
+  });
+});
+
+describe("applyWineColorPctChange", () => {
+  it("sets a value when the total stays at or below 100", () => {
+    assert.deepEqual(applyWineColorPctChange(pct(20, 10, 10, 0, 0), "wine_pct_red", 50), pct(50, 10, 10, 0, 0));
+  });
+
+  it("allows decreasing a value without filling the others", () => {
+    assert.deepEqual(applyWineColorPctChange(pct(60, 20, 20, 0, 0), "wine_pct_red", 10), pct(10, 20, 20, 0, 0));
+  });
+
+  it("reduces later non-zero colors when an increase would exceed 100", () => {
+    assert.deepEqual(
+      applyWineColorPctChange(pct(40, 30, 20, 10, 0), "wine_pct_red", 80),
+      pct(80, 0, 10, 10, 0),
     );
   });
 
-  it("rejects totals that are not 100", () => {
-    assert.match(
-      validateWineColorBreakdown({
-        wine_pct_red: 20,
-        wine_pct_rose: 20,
-        wine_pct_white: 20,
-        wine_pct_sparkling: 20,
-        wine_pct_liqueur: 19,
-      }) ?? "",
-      /100 %/,
-    );
+  it("never produces negative percentages", () => {
+    const next = applyWineColorPctChange(pct(20, 20, 20, 20, 20), "wine_pct_red", 100);
+    assert.deepEqual(next, pct(100, 0, 0, 0, 0));
+    assert.equal(wineColorBreakdownTotal(next), 100);
+    for (const value of Object.values(next)) {
+      assert.ok((value ?? 0) >= 0);
+    }
+  });
+
+  it("clamps the edited value between 0 and 100", () => {
+    assert.deepEqual(applyWineColorPctChange(pct(10, 0, 0, 0, 0), "wine_pct_red", 140), pct(100, 0, 0, 0, 0));
+    assert.deepEqual(applyWineColorPctChange(pct(10, 0, 0, 0, 0), "wine_pct_red", -8), pct(0, 0, 0, 0, 0));
   });
 });
 
 describe("wineColorBreakdownTotal", () => {
   it("includes rosé in the total", () => {
-    assert.equal(
-      wineColorBreakdownTotal({
-        wine_pct_red: 40,
-        wine_pct_rose: 10,
-        wine_pct_white: 30,
-        wine_pct_sparkling: 15,
-        wine_pct_liqueur: 5,
-      }),
-      100,
-    );
+    assert.equal(wineColorBreakdownTotal(pct(40, 10, 30, 15, 5)), 100);
   });
 });
 
 describe("hasWineColorBreakdownData", () => {
   it("detects rosé-only data", () => {
-    assert.equal(
-      hasWineColorBreakdownData({
-        wine_pct_red: null,
-        wine_pct_rose: 100,
-        wine_pct_white: null,
-        wine_pct_sparkling: null,
-        wine_pct_liqueur: null,
-      }),
-      true,
-    );
+    assert.equal(hasWineColorBreakdownData(pct(null, 100, null, null, null)), true);
   });
 });
