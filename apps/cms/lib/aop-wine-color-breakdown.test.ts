@@ -56,11 +56,15 @@ describe("applyWineColorPctChange", () => {
     assert.deepEqual(applyWineColorPctChange(pct(60, 20, 20, 0, 0), "wine_pct_red", 10), pct(10, 20, 20, 0, 0));
   });
 
-  it("reduces later non-zero colors when an increase would exceed 100", () => {
+  it("reduces other non-zero colors when an increase would exceed 100", () => {
     assert.deepEqual(
       applyWineColorPctChange(pct(40, 30, 20, 10, 0), "wine_pct_red", 80),
       pct(80, 0, 10, 10, 0),
     );
+  });
+
+  it("never lets two colors stay at 100", () => {
+    assert.deepEqual(applyWineColorPctChange(pct(100, 0, 0, 0, 0), "wine_pct_rose", 100), pct(0, 100, 0, 0, 0));
   });
 
   it("never produces negative percentages", () => {

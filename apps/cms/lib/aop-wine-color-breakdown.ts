@@ -65,7 +65,11 @@ const WINE_COLOR_FIELDS: Array<keyof WineColorBreakdown> = [
   "wine_pct_liqueur",
 ];
 
-/** Apply one editor change, keeping the total at 100% maximum. */
+/**
+ * Apply one CRM editor change while keeping the total ≤ 100%.
+ * Increasing a color automatically reduces other non-zero colors as needed.
+ * Decreasing a color does not refill others (totals below 100% are allowed).
+ */
 export function applyWineColorPctChange(
   current: WineColorBreakdown,
   field: keyof WineColorBreakdown,
