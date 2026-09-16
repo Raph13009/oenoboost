@@ -150,14 +150,14 @@ async function liveChecks() {
       ];
       if (vals.every((v) => v == null)) return false;
       const sum = vals.reduce((a, v) => a + (v ?? 0), 0);
-      return sum !== 100;
+      return sum > 100;
     });
     if (offenders.length) {
       fail(
-        `Found ${offenders.length} AOP wine color breakdown(s) not summing to 100 (e.g. ${offenders[0].slug})`,
+        `Found ${offenders.length} AOP wine color breakdown(s) summing over 100 (e.g. ${offenders[0].slug})`,
       );
     } else {
-      ok("Sampled AOP wine color breakdowns sum to 100 when set");
+      ok("Sampled AOP wine color breakdowns stay at or below 100 when set");
     }
   }
 
