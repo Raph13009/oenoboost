@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { Star } from "lucide-react";
 
 import { FavoritesAuthModal } from "@/components/shared/favorites-auth-modal";
@@ -49,6 +49,11 @@ export function AppellationFavoriteButton({
   size = "default",
 }: Props) {
   const [favorited, setFavorited] = useState(initialFavorited);
+  const [seenInitial, setSeenInitial] = useState(initialFavorited);
+  if (initialFavorited !== seenInitial) {
+    setSeenInitial(initialFavorited);
+    setFavorited(initialFavorited);
+  }
   const [authOpen, setAuthOpen] = useState(false);
   const [premiumOpen, setPremiumOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -67,10 +72,6 @@ export function AppellationFavoriteButton({
     () => `/signup?next=${encodeURIComponent(returnPath)}`,
     [returnPath],
   );
-
-  useEffect(() => {
-    setFavorited(initialFavorited);
-  }, [initialFavorited]);
 
   const handleClick = () => {
     if (!isLoggedIn) {

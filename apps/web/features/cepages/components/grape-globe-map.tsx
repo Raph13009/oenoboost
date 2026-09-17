@@ -117,14 +117,18 @@ export function GrapeGlobeMap({
 
   useEffect(() => {
     if (!tooltip) {
-      setTooltipShown(false);
-      return;
+      const hide = requestAnimationFrame(() => setTooltipShown(false));
+      return () => cancelAnimationFrame(hide);
     }
-    setTooltipShown(false);
-    const id = requestAnimationFrame(() => {
-      requestAnimationFrame(() => setTooltipShown(true));
+    let show = 0;
+    const hide = requestAnimationFrame(() => {
+      setTooltipShown(false);
+      show = requestAnimationFrame(() => setTooltipShown(true));
     });
-    return () => cancelAnimationFrame(id);
+    return () => {
+      cancelAnimationFrame(hide);
+      cancelAnimationFrame(show);
+    };
   }, [tooltip]);
 
   useEffect(() => {

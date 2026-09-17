@@ -25,6 +25,20 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      // pnpm may place CMS @types/react@18 under node_modules/.pnpm/node_modules.
+      // Pin web module resolution to this app's React 19 types only.
+      "react": [
+        "./node_modules/@types/react"
+      ],
+      "react-dom": [
+        "./node_modules/@types/react-dom"
+      ],
+      "react/jsx-runtime": [
+        "./node_modules/@types/react/jsx-runtime"
+      ],
+      "react/jsx-dev-runtime": [
+        "./node_modules/@types/react/jsx-dev-runtime"
       ]
     }
   },

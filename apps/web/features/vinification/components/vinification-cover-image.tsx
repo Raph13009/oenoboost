@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { getVinificationIllustrationSrc, VINIFICATION_PLACEHOLDER_IMAGE } from "../utils";
 
 type VinificationCoverImageProps = {
@@ -22,10 +22,11 @@ export function VinificationCoverImage({
   priority,
 }: VinificationCoverImageProps) {
   const [src, setSrc] = useState(() => getVinificationIllustrationSrc(illustrationUrl));
-
-  useEffect(() => {
+  const [seenUrl, setSeenUrl] = useState(illustrationUrl);
+  if (illustrationUrl !== seenUrl) {
+    setSeenUrl(illustrationUrl);
     setSrc(getVinificationIllustrationSrc(illustrationUrl));
-  }, [illustrationUrl]);
+  }
 
   return (
     <Image

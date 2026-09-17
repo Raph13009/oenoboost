@@ -46,8 +46,11 @@ export function TastingFlowProvider({
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    setDraft(loadDraft());
-    setHydrated(true);
+    const frame = requestAnimationFrame(() => {
+      setDraft(loadDraft());
+      setHydrated(true);
+    });
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {
