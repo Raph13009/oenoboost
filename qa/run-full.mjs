@@ -46,7 +46,7 @@ const skipE2E =
   process.env.QA_SKIP_E2E === "1" ||
   (!process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.CI);
 
-steps.lint = run("Lint", "npm", ["run", "lint"]);
+steps.lint = run("Lint", "pnpm", ["run", "lint"]);
 // Pre-existing web lint debt should not block standing up the QA gate locally.
 // Set QA_STRICT=1 (CI default) to fail the full gate on lint errors.
 if (
@@ -59,16 +59,16 @@ if (
   );
   steps.lint = "skip";
 }
-steps.typecheck = run("Typecheck", "npm", ["run", "typecheck"]);
-steps.unit = run("Unit tests", "npm", ["run", "test:unit"]);
-steps.build = run("Build", "npm", ["run", "build"]);
-steps.db = run("Database checks", "npm", ["run", "qa:db"]);
+steps.typecheck = run("Typecheck", "pnpm", ["run", "typecheck"]);
+steps.unit = run("Unit tests", "pnpm", ["run", "test:unit"]);
+steps.build = run("Build", "pnpm", ["run", "build"]);
+steps.db = run("Database checks", "pnpm", ["run", "qa:db"]);
 
 if (skipE2E) {
   console.log("\n=== Playwright E2E skipped (no Supabase env / QA_SKIP_E2E=1) ===\n");
   steps.e2e = "skip";
 } else {
-  steps.e2e = run("Playwright E2E", "npx", ["playwright", "test"]);
+  steps.e2e = run("Playwright E2E", "pnpm", ["exec", "playwright", "test"]);
 }
 
 fs.writeFileSync(path.join(artifacts, "steps.json"), JSON.stringify(steps, null, 2));
