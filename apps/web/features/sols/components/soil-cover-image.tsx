@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { getSoilImageSrc, SOIL_PLACEHOLDER_IMAGE } from "../utils";
 
 type SoilCoverImageProps = {
@@ -22,10 +22,11 @@ export function SoilCoverImage({
   priority,
 }: SoilCoverImageProps) {
   const [src, setSrc] = useState(() => getSoilImageSrc(photoUrl));
-
-  useEffect(() => {
+  const [seenUrl, setSeenUrl] = useState(photoUrl);
+  if (photoUrl !== seenUrl) {
+    setSeenUrl(photoUrl);
     setSrc(getSoilImageSrc(photoUrl));
-  }, [photoUrl]);
+  }
 
   return (
     <Image
