@@ -3,6 +3,7 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { shouldActivateMouseDrag } from "./horizontal-carousel-drag";
 
 const CAROUSEL_CARD_SELECTOR = "[data-carousel-card]";
 
@@ -13,10 +14,19 @@ type HorizontalCarouselProps = {
   itemCount: number;
 };
 
-/** Block link clicks only when the track actually scrolled (avoids killing taps on small pointer wobble). */
-const SCROLL_DELTA_TO_SUPPRESS_LINK_PX = 12;
 const INERTIA_FRICTION = 0.94;
 const MIN_VELOCITY = 0.45;
+
+type MouseDragSession = {
+  /** Pending = pressed, not yet a drag. Dragging = capture + scroll active. */
+  phase: "pending" | "dragging";
+  pointerId: number;
+  startX: number;
+  startScroll: number;
+  lastX: number;
+  lastT: number;
+  velocity: number;
+};
 
 export function HorizontalCarousel({
   children,
@@ -26,15 +36,7 @@ export function HorizontalCarousel({
 }: HorizontalCarouselProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const suppressClickRef = useRef(false);
-  const dragRef = useRef<{
-    active: boolean;
-    pointerId: number;
-    startX: number;
-    startScroll: number;
-    lastX: number;
-    lastT: number;
-    velocity: number;
-  } | null>(null);
+  const dragRef = useRef<MouseDragSession | null>(null);
   const inertiaRafRef = useRef<number | null>(null);
 
   const [canPrev, setCanPrev] = useState(false);
@@ -110,9 +112,11 @@ export function HorizontalCarousel({
       const el = trackRef.current;
       if (!el) return;
 
+      // Do not setPointerCapture yet — that blocks child <Link> clicks.
+      // Stay pending until movement proves this is a drag.
       suppressClickRef.current = false;
       dragRef.current = {
-        active: true,
+        phase: "pending",
         pointerId: e.pointerId,
         startX: e.clientX,
         startScroll: el.scrollLeft,
@@ -120,22 +124,29 @@ export function HorizontalCarousel({
         lastT: performance.now(),
         velocity: 0,
       };
-      try {
-        el.setPointerCapture(e.pointerId);
-      } catch {
-        /* ignore */
-      }
-      setIsDragging(true);
     },
     [stopInertia],
   );
 
   const onPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     const d = dragRef.current;
-    if (!d?.active || e.pointerId !== d.pointerId || e.pointerType !== "mouse") return;
+    if (!d || e.pointerId !== d.pointerId || e.pointerType !== "mouse") return;
 
     const el = trackRef.current;
     if (!el) return;
+
+    if (d.phase === "pending") {
+      if (!shouldActivateMouseDrag(d.startX, e.clientX)) return;
+
+      d.phase = "dragging";
+      suppressClickRef.current = true;
+      try {
+        el.setPointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
+      setIsDragging(true);
+    }
 
     const dx = e.clientX - d.startX;
     el.scrollLeft = d.startScroll - dx;
@@ -151,31 +162,27 @@ export function HorizontalCarousel({
   const endMouseDrag = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       const d = dragRef.current;
-      if (!d?.active || e.pointerId !== d.pointerId || e.pointerType !== "mouse") return;
+      if (!d || e.pointerId !== d.pointerId || e.pointerType !== "mouse") return;
 
-      const el = trackRef.current;
+      const wasDragging = d.phase === "dragging";
       const releaseVelocity = d.velocity;
-      const startScroll = d.startScroll;
 
-      if (el) {
-        suppressClickRef.current =
-          Math.abs(el.scrollLeft - startScroll) >
-          SCROLL_DELTA_TO_SUPPRESS_LINK_PX;
-      } else {
-        suppressClickRef.current = false;
-      }
+      // Only kill the synthetic click after a real drag.
+      suppressClickRef.current = wasDragging;
 
       dragRef.current = null;
       setIsDragging(false);
 
-      try {
-        e.currentTarget.releasePointerCapture(e.pointerId);
-      } catch {
-        /* ignore */
-      }
+      if (wasDragging) {
+        try {
+          e.currentTarget.releasePointerCapture(e.pointerId);
+        } catch {
+          /* ignore */
+        }
 
-      if (Math.abs(releaseVelocity) > MIN_VELOCITY) {
-        runInertia(releaseVelocity);
+        if (Math.abs(releaseVelocity) > MIN_VELOCITY) {
+          runInertia(releaseVelocity);
+        }
       }
     },
     [runInertia],
@@ -231,7 +238,7 @@ export function HorizontalCarousel({
         onPointerUp={endMouseDrag}
         onPointerCancel={endMouseDrag}
         onPointerLeave={(e) => {
-          if (dragRef.current?.active && e.pointerType === "mouse") {
+          if (dragRef.current && e.pointerType === "mouse") {
             endMouseDrag(e);
           }
         }}

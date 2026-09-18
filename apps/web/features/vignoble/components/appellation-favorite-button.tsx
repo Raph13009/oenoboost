@@ -7,6 +7,7 @@ import { FavoritesAuthModal } from "@/components/shared/favorites-auth-modal";
 import { FavoritesPremiumLimitModal } from "@/components/shared/favorites-premium-limit-modal";
 import { SimpleToast } from "@/components/shared/simple-toast";
 import { toggleAppellationFavoriteAction } from "@/features/vignoble/actions/appellation-favorite-actions";
+import { buildAopDetailHref } from "@/features/vignoble/lib/aop-slug";
 import { cn } from "@/lib/utils";
 
 export type AppellationFavoriteLabels = {
@@ -59,10 +60,17 @@ export function AppellationFavoriteButton({
   const [toast, setToast] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const returnPath = useMemo(() => {
-    const q = new URLSearchParams({ subregion: subregionSlug });
-    return `/vignoble/${regionSlug}/${aopSlug}?${q.toString()}`;
-  }, [regionSlug, aopSlug, subregionSlug]);
+  useEffect(() => {
+    setFavorited(initialFavorited);
+  }, [initialFavorited]);
+
+  const returnPath = useMemo(
+    () =>
+      buildAopDetailHref(regionSlug, aopSlug, {
+        subregion: subregionSlug,
+      }),
+    [regionSlug, aopSlug, subregionSlug],
+  );
 
   const loginHref = useMemo(
     () => `/login?next=${encodeURIComponent(returnPath)}`,

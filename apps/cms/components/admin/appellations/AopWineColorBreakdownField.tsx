@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import {
   WINE_COLOR_CHART_COLORS,
   WINE_COLOR_LABELS,
-  clampWinePct,
+  applyWineColorPctChange,
   emptyWineColorBreakdown,
   hasWineColorBreakdownData,
   type WineColorBreakdown,
@@ -116,7 +116,7 @@ export function AopWineColorBreakdownField({
   };
 
   const setField = (field: keyof WineColorBreakdown, raw: number) => {
-    onChange({ ...value, [field]: clampWinePct(raw) });
+    onChange(applyWineColorPctChange(value, field, raw));
   };
 
   const distributeEvenly = () => {

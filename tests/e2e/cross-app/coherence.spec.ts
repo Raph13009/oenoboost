@@ -61,5 +61,5 @@ test.describe("Cross-app coherence", () => {
   /**
    * Future: DGC child routes to parent fiche once Issue #23 ships.
    */
-  test.fix("DGC child routes to parent fiche", async () => {});
+  test.fixme("DGC child routes to parent fiche", async () => {});
 });

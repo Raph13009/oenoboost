@@ -8,6 +8,7 @@ import type {
   VignobleMapLocale,
   VignobleMapStrings,
 } from "@/components/map/types";
+import { buildAopDetailHref } from "@/features/vignoble/lib/aop-slug";
 
 export type AopPanelInfo = {
   id: number;
@@ -40,12 +41,13 @@ export function AopDetailPanel({
   // `from=map` marks the link as an AOP-detail link so the route renders the
   // fiche even when the AOP shares its slug with a subregion; `subregion=`
   // additionally gives the detail page its back-to-map context.
-  const detailHref = (() => {
-    if (!aop.region_slug || !aop.slug) return null;
-    const params = new URLSearchParams({ from: "map" });
-    if (aop.subregion_slug) params.set("subregion", aop.subregion_slug);
-    return `/vignoble/${aop.region_slug}/${aop.slug}?${params.toString()}`;
-  })();
+  const detailHref =
+    aop.region_slug && aop.slug
+      ? buildAopDetailHref(aop.region_slug, aop.slug, {
+          from: "map",
+          subregion: aop.subregion_slug ?? undefined,
+        })
+      : null;
 
   return (
     <div className="flex h-full flex-col">
