@@ -60,10 +60,6 @@ export function AppellationFavoriteButton({
   const [toast, setToast] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  useEffect(() => {
-    setFavorited(initialFavorited);
-  }, [initialFavorited]);
-
   const returnPath = useMemo(
     () =>
       buildAopDetailHref(regionSlug, aopSlug, {
