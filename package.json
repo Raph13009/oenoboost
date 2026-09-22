@@ -4,8 +4,8 @@
   "private": true,
   "packageManager": "pnpm@9.15.9",
   "scripts": {
-    "dev:web": "pnpm --filter oenoboost-app dev -- -p 3000",
-    "dev:cms": "pnpm --filter oenoboost-1 dev -- -p 3001",
+    "dev:web": "pnpm --filter oenoboost-app exec next dev -p 3000",
+    "dev:cms": "pnpm --filter oenoboost-1 exec next dev -p 3001",
     "build:web": "NODE_OPTIONS='--max-old-space-size=8192' pnpm --filter oenoboost-app build",
     "build:cms": "NODE_OPTIONS='--max-old-space-size=8192' pnpm --filter oenoboost-1 build",
     "build": "pnpm run build:web && pnpm run build:cms",

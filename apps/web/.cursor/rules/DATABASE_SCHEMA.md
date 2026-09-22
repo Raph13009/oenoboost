@@ -1,5 +1,11 @@
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
+--
+-- Canonical monorepo reference: docs/DATABASE_SCHEMA.sql
+-- Active AOP entity: public.aop (int4 PK). Legacy uuid public.appellations
+-- below is historical backup. Issue #24: aop.recognition_year smallint NULL
+-- (year of AOP/AOC recognition, CHECK 1800–2100; year-only, no invented dates).
+-- Issue #21: wine_region_history_milestones (ordered region timeline milestones).
 
 CREATE TABLE public.appellation_commune_links (
   appellation_id uuid NOT NULL,
@@ -461,6 +467,23 @@ CREATE TABLE public.wine_regions (
   updated_at timestamp without time zone DEFAULT now(),
   deleted_at timestamp without time zone,
   CONSTRAINT wine_regions_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.wine_region_history_milestones (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  region_id uuid NOT NULL,
+  milestone_order integer NOT NULL,
+  period_label_fr character varying(100) NOT NULL DEFAULT ''::character varying,
+  period_label_en character varying(100) NOT NULL DEFAULT ''::character varying,
+  title_fr character varying(255) NOT NULL DEFAULT ''::character varying,
+  title_en character varying(255) NOT NULL DEFAULT ''::character varying,
+  detail_fr text,
+  detail_en text,
+  icon_url text,
+  created_at timestamp without time zone DEFAULT now(),
+  updated_at timestamp without time zone DEFAULT now(),
+  CONSTRAINT wine_region_history_milestones_pkey PRIMARY KEY (id),
+  CONSTRAINT wine_region_history_milestones_region_id_fkey FOREIGN KEY (region_id) REFERENCES public.wine_regions(id) ON DELETE CASCADE,
+  CONSTRAINT wine_region_history_milestones_region_order_unique UNIQUE (region_id, milestone_order)
 );
 CREATE TABLE public.wine_subregions (
   id uuid NOT NULL DEFAULT gen_random_uuid(),

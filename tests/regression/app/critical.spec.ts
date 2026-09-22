@@ -1,12 +1,12 @@
 import { test, expect } from "@playwright/test";
-import { attachErrorProbe, assertNoHardCrashes } from "../helpers/errors";
+import { attachErrorProbe, assertNoHardCrashes } from "../../e2e/helpers/errors";
 import {
   freeAuthConfigured,
   hasSupabaseEnv,
   loadFixtures,
   premiumAuthConfigured,
-} from "../helpers/fixtures";
-import { loginApp } from "../helpers/auth";
+} from "../../e2e/helpers/fixtures";
+import { loginApp } from "../../e2e/helpers/auth";
 
 test.describe("App critical regression", () => {
   test.beforeEach(() => {

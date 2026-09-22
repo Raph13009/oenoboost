@@ -384,6 +384,14 @@ const en: Dictionary = {
     wineColorSparkling: "Sparkling wine",
     wineColorLiqueur: "Fortified / liqueur wine",
     climateTitle: "Climate",
+    regionsListTitle: "Wine regions",
+    regionsListIntro:
+      "Browse France’s major wine regions, their history, and their subregions.",
+    historyTimelineTitle: "History",
+    historyTimelineHint: "Select a milestone to read the details.",
+    backToRegionsList: "Back to regions",
+    openOnMap: "View on map",
+    viewRegionPage: "View region page",
   },
   home: {
     subtitle:

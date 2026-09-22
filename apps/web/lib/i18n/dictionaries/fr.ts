@@ -383,6 +383,14 @@ const fr = {
     wineColorSparkling: "Vin effervescent",
     wineColorLiqueur: "Vin liquoreux",
     climateTitle: "Climat",
+    regionsListTitle: "Régions viticoles",
+    regionsListIntro:
+      "Parcourez les grandes régions viticoles françaises, leur histoire et leurs sous-régions.",
+    historyTimelineTitle: "Histoire",
+    historyTimelineHint: "Sélectionnez un jalon pour lire le détail.",
+    backToRegionsList: "Retour aux régions",
+    openOnMap: "Voir sur la carte",
+    viewRegionPage: "Voir la fiche",
   },
   home: {
     subtitle:

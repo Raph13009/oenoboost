@@ -10,7 +10,6 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -74,6 +73,60 @@ function isLikelyProduction(url) {
   return /prod|production/i.test(url);
 }
 
+/**
+ * Read-only PostgREST probes via fetch.
+ * Avoids @supabase/supabase-js Realtime init, which requires Node 22+ native WebSocket
+ * (or an explicit `ws` transport) and would crash the gate on Node 20.
+ */
+function restHeaders(apiKey) {
+  return {
+    apikey: apiKey,
+    Authorization: `Bearer ${apiKey}`,
+    Accept: "application/json",
+  };
+}
+
+async function restGet(baseUrl, apiKey, pathAndQuery) {
+  const res = await fetch(`${baseUrl.replace(/\/$/, "")}/rest/v1/${pathAndQuery}`, {
+    method: "GET",
+    headers: restHeaders(apiKey),
+  });
+  const text = await res.text();
+  let data = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = text;
+    }
+  }
+  if (!res.ok) {
+    const msg =
+      data && typeof data === "object" && data.message
+        ? data.message
+        : `HTTP ${res.status}`;
+    return { data: null, error: { message: msg } };
+  }
+  return { data, error: null };
+}
+
+async function restHeadCount(baseUrl, apiKey, table) {
+  const res = await fetch(
+    `${baseUrl.replace(/\/$/, "")}/rest/v1/${table}?select=*`,
+    {
+      method: "HEAD",
+      headers: {
+        ...restHeaders(apiKey),
+        Prefer: "count=exact",
+      },
+    },
+  );
+  if (!res.ok) {
+    return { error: { message: `HTTP ${res.status}` } };
+  }
+  return { error: null };
+}
+
 async function liveChecks() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -97,12 +150,11 @@ async function liveChecks() {
     );
   }
 
-  const client = createClient(url, service || anon, {
-    auth: { persistSession: false },
-  });
+  const apiKey = service || anon;
 
   const tables = [
     "wine_regions",
+    "wine_region_history_milestones",
     "subregions",
     "aop",
     "grapes",
@@ -112,35 +164,34 @@ async function liveChecks() {
   ];
 
   for (const table of tables) {
-    const { error } = await client.from(table).select("*", { count: "exact", head: true });
+    const { error } = await restHeadCount(url, apiKey, table);
     if (error) fail(`Table probe failed for ${table}: ${error.message}`);
     else ok(`Table reachable: ${table}`);
   }
 
   // Soft-deleted content should not appear as active if deleted_at set — sample.
-  const { data: deletedAops, error: delErr } = await client
-    .from("aop")
-    .select("id")
-    .not("deleted_at", "is", null)
-    .limit(1);
+  const { data: deletedAops, error: delErr } = await restGet(
+    url,
+    apiKey,
+    "aop?select=id&deleted_at=not.is.null&limit=1",
+  );
   if (delErr) info(`Could not probe soft-delete rows: ${delErr.message}`);
-  else ok(`Soft-delete column queryable on aop (deleted sample count=${deletedAops?.length ?? 0})`);
+  else
+    ok(
+      `Soft-delete column queryable on aop (deleted sample count=${Array.isArray(deletedAops) ? deletedAops.length : 0})`,
+    );
 
   // Wine color breakdown invariant: when any pct set, sum should be 100 (DB CHECK).
-  const { data: badPct, error: pctErr } = await client
-    .from("aop")
-    .select(
-      "id, slug, wine_pct_red, wine_pct_rose, wine_pct_white, wine_pct_sparkling, wine_pct_liqueur",
-    )
-    .or(
-      "wine_pct_red.not.is.null,wine_pct_rose.not.is.null,wine_pct_white.not.is.null,wine_pct_sparkling.not.is.null,wine_pct_liqueur.not.is.null",
-    )
-    .limit(200);
+  const { data: badPct, error: pctErr } = await restGet(
+    url,
+    apiKey,
+    "aop?select=id,slug,wine_pct_red,wine_pct_rose,wine_pct_white,wine_pct_sparkling,wine_pct_liqueur&or=(wine_pct_red.not.is.null,wine_pct_rose.not.is.null,wine_pct_white.not.is.null,wine_pct_sparkling.not.is.null,wine_pct_liqueur.not.is.null)&limit=200",
+  );
 
   if (pctErr) {
     info(`Wine pct probe skipped: ${pctErr.message}`);
   } else {
-    const offenders = (badPct ?? []).filter((row) => {
+    const offenders = (Array.isArray(badPct) ? badPct : []).filter((row) => {
       const vals = [
         row.wine_pct_red,
         row.wine_pct_rose,

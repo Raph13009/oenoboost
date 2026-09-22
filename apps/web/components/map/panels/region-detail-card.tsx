@@ -1,9 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { forwardRef } from "react";
 import { XIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
+import { cn } from "@/lib/utils";
 import type {
   VignobleMapLocale,
   VignobleMapRegion,
@@ -95,7 +98,7 @@ export const RegionDetailCard = forwardRef<HTMLDivElement, RegionDetailCardProps
               </div>
             </div>
 
-            <div className="mt-2 flex gap-2 md:mt-4">
+            <div className="mt-2 flex flex-col gap-2 sm:flex-row md:mt-4">
               <Button
                 className="h-11 flex-1"
                 disabled={discoverDisabled}
@@ -103,6 +106,15 @@ export const RegionDetailCard = forwardRef<HTMLDivElement, RegionDetailCardProps
               >
                 {strings.discover}
               </Button>
+              <Link
+                href={`/vignoble/${region.region_slug}`}
+                className={cn(
+                  buttonVariants({ variant: "outline" }),
+                  "inline-flex h-11 flex-1 items-center justify-center",
+                )}
+              >
+                {strings.viewRegionPage}
+              </Link>
             </div>
           </div>
         )}

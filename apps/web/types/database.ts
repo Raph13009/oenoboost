@@ -20,6 +20,21 @@ export type WineRegion = {
   deleted_at: string | null;
 };
 
+export type WineRegionHistoryMilestone = {
+  id: string;
+  region_id: string;
+  milestone_order: number;
+  period_label_fr: string;
+  period_label_en: string;
+  title_fr: string;
+  title_en: string;
+  detail_fr: string | null;
+  detail_en: string | null;
+  icon_url: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 /**
  * Subregion shape as exposed to the app. Backed by `public.subregions`
  * (integer id, N:N commune links via `communes_full_subregion_link`).

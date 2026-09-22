@@ -22,6 +22,7 @@ export type SubregionLegendItem = {
 
 export type VignobleMapStrings = {
   discover: string;
+  viewRegionPage: string;
   backToRegions: string;
   backToRegion: string;
   subregionsLayer: string;

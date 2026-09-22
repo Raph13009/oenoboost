@@ -4,6 +4,12 @@
 > **Langues**: colonnes éditoriales suffixées `_fr` / `_en`  
 > **Last Update**: March 2026
 
+> **Canonical monorepo reference**: `docs/DATABASE_SCHEMA.sql`  
+> **Active AOP entity**: `public.aop` (int4 PK, comagri IDA). CMS + public app read/write this table.  
+> Legacy uuid `public.appellations` below is historical backup only.  
+> **Issue #24**: `aop.recognition_year` (`smallint`, nullable, CHECK 1800–2100) — year of AOP/AOC recognition; empty when unknown. Year-only on purpose (no invented month/day).  
+> **Issue #21**: `wine_region_history_milestones` — ordered timeline milestones per `wine_regions` (period label text FR/EN, title, detail, optional `icon_url`).
+
 ---
 
 ## Conventions de nommage
@@ -123,6 +129,25 @@ Connexions OAuth (Google, etc.).
 | `deleted_at` | TIMESTAMP | |
 
 **Index** : `idx_wine_regions_slug`, `idx_wine_regions_status`
+
+---
+
+#### `wine_region_history_milestones`
+Jalons d'historique / timeline par région (issue #21). Ordre éditorial via `milestone_order`.
+
+| Colonne | Type | Notes |
+|---|---|---|
+| `id` | UUID | PK |
+| `region_id` | UUID | FK → `wine_regions(id)` CASCADE |
+| `milestone_order` | INTEGER | ordre d'affichage (1..n) |
+| `period_label_fr` / `period_label_en` | VARCHAR(100) | date ou période libre (ex. `1855`, `XIIe siècle`) — pas de type date |
+| `title_fr` / `title_en` | VARCHAR(255) | titre court |
+| `detail_fr` / `detail_en` | TEXT | détail révélé à la sélection |
+| `icon_url` | TEXT | illustration optionnelle (URL) |
+| `created_at` / `updated_at` | TIMESTAMP | |
+
+**Index** : `idx_wine_region_history_milestones_region`  
+**Unique** : `(region_id, milestone_order)`
 
 ---
 

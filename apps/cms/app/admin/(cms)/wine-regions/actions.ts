@@ -142,3 +142,154 @@ export async function deleteWineRegion(id: string): Promise<{ error?: string }> 
   revalidatePath("/admin/wine-regions");
   return {};
 }
+
+export type WineRegionHistoryMilestone = {
+  id: string;
+  region_id: string;
+  milestone_order: number;
+  period_label_fr: string;
+  period_label_en: string;
+  title_fr: string;
+  title_en: string;
+  detail_fr: string | null;
+  detail_en: string | null;
+  icon_url: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type WineRegionHistoryMilestoneForm = Omit<
+  WineRegionHistoryMilestone,
+  "created_at" | "updated_at"
+>;
+
+const HISTORY_MILESTONE_COLUMNS =
+  "id,region_id,milestone_order,period_label_fr,period_label_en,title_fr,title_en,detail_fr,detail_en,icon_url,created_at,updated_at";
+
+function milestoneFormToRow(form: WineRegionHistoryMilestoneForm): Record<string, unknown> {
+  return {
+    region_id: form.region_id,
+    milestone_order: form.milestone_order,
+    period_label_fr: form.period_label_fr || "",
+    period_label_en: form.period_label_en || "",
+    title_fr: form.title_fr || "",
+    title_en: form.title_en || "",
+    detail_fr: form.detail_fr || null,
+    detail_en: form.detail_en || null,
+    icon_url: form.icon_url || null,
+    updated_at: new Date().toISOString(),
+  };
+}
+
+export async function getWineRegionHistoryMilestones(
+  regionId: string
+): Promise<WineRegionHistoryMilestone[]> {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("wine_region_history_milestones")
+    .select(HISTORY_MILESTONE_COLUMNS)
+    .eq("region_id", regionId)
+    .order("milestone_order", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as WineRegionHistoryMilestone[];
+}
+
+export async function createWineRegionHistoryMilestone(
+  regionId: string
+): Promise<{ milestone?: WineRegionHistoryMilestone; error?: string }> {
+  const supabase = getSupabaseAdmin();
+  const { data: existing, error: readError } = await supabase
+    .from("wine_region_history_milestones")
+    .select("milestone_order")
+    .eq("region_id", regionId)
+    .order("milestone_order", { ascending: false })
+    .limit(1);
+
+  if (readError) return { error: readError.message };
+
+  const nextOrder =
+    ((existing?.[0] as { milestone_order?: number } | undefined)?.milestone_order ?? 0) + 1;
+  const { data, error } = await supabase
+    .from("wine_region_history_milestones")
+    .insert({
+      region_id: regionId,
+      milestone_order: nextOrder,
+      period_label_fr: "",
+      period_label_en: "",
+      title_fr: `Jalon ${nextOrder}`,
+      title_en: `Milestone ${nextOrder}`,
+    })
+    .select(HISTORY_MILESTONE_COLUMNS)
+    .single();
+
+  if (error || !data) return { error: error?.message ?? "Impossible de créer le jalon." };
+  revalidatePath("/admin/wine-regions");
+  return { milestone: data as WineRegionHistoryMilestone };
+}
+
+export async function updateWineRegionHistoryMilestone(
+  id: string,
+  form: WineRegionHistoryMilestoneForm
+): Promise<{ error?: string }> {
+  const supabase = getSupabaseAdmin();
+  const row = milestoneFormToRow(form);
+  const { error } = await supabase.from("wine_region_history_milestones").update(row).eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/admin/wine-regions");
+  return {};
+}
+
+export async function deleteWineRegionHistoryMilestone(id: string): Promise<{ error?: string }> {
+  const supabase = getSupabaseAdmin();
+
+  const { data: milestone, error: readError } = await supabase
+    .from("wine_region_history_milestones")
+    .select("region_id")
+    .eq("id", id)
+    .single();
+  if (readError || !milestone) return { error: readError?.message ?? "Jalon introuvable." };
+
+  const regionId = (milestone as { region_id: string }).region_id;
+  const { error } = await supabase.from("wine_region_history_milestones").delete().eq("id", id);
+  if (error) return { error: error.message };
+
+  const { data: remaining, error: remainingError } = await supabase
+    .from("wine_region_history_milestones")
+    .select("id")
+    .eq("region_id", regionId)
+    .order("milestone_order", { ascending: true });
+  if (remainingError) return { error: remainingError.message };
+
+  const remainingMilestones = remaining ?? [];
+  for (let index = 0; index < remainingMilestones.length; index += 1) {
+    const row = remainingMilestones[index];
+    const { error: reorderError } = await supabase
+      .from("wine_region_history_milestones")
+      .update({ milestone_order: index + 1, updated_at: new Date().toISOString() })
+      .eq("id", (row as { id: string }).id);
+    if (reorderError) return { error: reorderError.message };
+  }
+
+  revalidatePath("/admin/wine-regions");
+  return {};
+}
+
+export async function reorderWineRegionHistoryMilestones(
+  regionId: string,
+  orderedMilestoneIds: string[]
+): Promise<{ error?: string }> {
+  const supabase = getSupabaseAdmin();
+
+  for (let index = 0; index < orderedMilestoneIds.length; index += 1) {
+    const milestoneId = orderedMilestoneIds[index];
+    const { error } = await supabase
+      .from("wine_region_history_milestones")
+      .update({ milestone_order: index + 1, updated_at: new Date().toISOString() })
+      .eq("id", milestoneId)
+      .eq("region_id", regionId);
+    if (error) return { error: error.message };
+  }
+
+  revalidatePath("/admin/wine-regions");
+  return {};
+}
