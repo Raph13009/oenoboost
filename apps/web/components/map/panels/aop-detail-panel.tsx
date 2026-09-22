@@ -9,7 +9,10 @@ import type {
   VignobleMapStrings,
 } from "@/components/map/types";
 import { buildAopDetailHref } from "@/features/vignoble/lib/aop-slug";
-import type { AopMapGrape } from "@/features/vignoble/actions/get-aop-map-info";
+import type {
+  AopMapDgcChild,
+  AopMapGrape,
+} from "@/features/vignoble/actions/get-aop-map-info";
 
 export type AopPanelInfo = {
   id: number;
@@ -21,6 +24,7 @@ export type AopPanelInfo = {
   fiche_slug: string | null;
   dgc_slug: string | null;
   grapes: AopMapGrape[];
+  dgc_children: AopMapDgcChild[];
 };
 
 type AopDetailPanelProps = {
@@ -133,6 +137,42 @@ export function AopDetailPanel({
             </div>
             <div className="mt-1 text-sm text-muted-foreground">{strings.na}</div>
           </>
+        )}
+
+        {aop.dgc_children.length > 0 && (
+          <div className="mt-3">
+            <div className="text-xs text-muted-foreground">
+              {strings.dgcChildrenLabel ?? "DGC"}
+            </div>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {aop.dgc_children.map((child) => {
+                const href =
+                  aop.region_slug && aop.fiche_slug
+                    ? buildAopDetailHref(aop.region_slug, aop.fiche_slug, {
+                        from: "map",
+                        subregion: aop.subregion_slug ?? undefined,
+                        dgc: child.slug,
+                      })
+                    : null;
+                return href ? (
+                  <Link
+                    key={child.id}
+                    href={href}
+                    className="inline-flex items-center rounded-full border border-border bg-background px-2.5 py-1 text-xs transition-colors hover:border-wine/20 hover:bg-accent hover:text-wine"
+                  >
+                    {child.name}
+                  </Link>
+                ) : (
+                  <span
+                    key={child.id}
+                    className="inline-flex items-center rounded-full border border-border bg-background px-2.5 py-1 text-xs"
+                  >
+                    {child.name}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
         )}
 
         {detailHref ? (

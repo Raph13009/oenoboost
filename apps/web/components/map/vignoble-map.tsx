@@ -212,6 +212,7 @@ export function VignobleMap({
         fiche_slug: null,
         dgc_slug: null,
         grapes: [],
+        dgc_children: [],
       });
       setSelectedAopLoading(true);
 
@@ -219,6 +220,18 @@ export function VignobleMap({
         const info = await getAopMapInfo(aopId);
         if (seq !== aopFetchSeqRef.current) return;
         if (info) {
+          // Parent + DGC children: zoom/highlight the whole family footprint.
+          if (info.family_ids.length > 1) {
+            const familyBounds = aopRef.current?.getBoundsForAops(info.family_ids);
+            if (familyBounds) {
+              cameraRef.current?.fitToBounds(familyBounds, {
+                padding: 60,
+                maxZoom: 12,
+              });
+            }
+            aopRef.current?.highlightAop(info.family_ids);
+          }
+
           setSelectedAop({
             id: info.id,
             name: info.name,
@@ -229,6 +242,7 @@ export function VignobleMap({
             fiche_slug: info.fiche_slug,
             dgc_slug: info.dgc_slug,
             grapes: info.grapes,
+            dgc_children: info.dgc_children,
           });
         }
       } catch (err) {

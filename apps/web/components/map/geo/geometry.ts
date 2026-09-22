@@ -38,6 +38,30 @@ export function computeMultiPolygonBounds(
   ];
 }
 
+/** Union of several bounds; skips nulls. Returns null if none valid. */
+export function unionBounds(boundsList: Array<Bounds | null | undefined>): Bounds | null {
+  let minLng = Infinity;
+  let minLat = Infinity;
+  let maxLng = -Infinity;
+  let maxLat = -Infinity;
+  let found = false;
+
+  for (const b of boundsList) {
+    if (!b) continue;
+    found = true;
+    if (b[0][0] < minLng) minLng = b[0][0];
+    if (b[0][1] < minLat) minLat = b[0][1];
+    if (b[1][0] > maxLng) maxLng = b[1][0];
+    if (b[1][1] > maxLat) maxLat = b[1][1];
+  }
+
+  if (!found) return null;
+  return [
+    [minLng, minLat],
+    [maxLng, maxLat],
+  ];
+}
+
 export function normalizeToMultiPolygon(
   geojson: any,
 ): GeoJSON.MultiPolygon | null {

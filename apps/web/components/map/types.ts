@@ -34,6 +34,7 @@ export type VignobleMapStrings = {
   grapesLabel: string;
   mainGrapesLabel?: string;
   accessoryGrapesLabel?: string;
+  dgcChildrenLabel?: string;
   historyTimelineTitle: string;
   historyTimelineHint: string;
   footerInfoTab: string;

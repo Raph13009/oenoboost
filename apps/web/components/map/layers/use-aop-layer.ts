@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { getAopCommunesInBbox } from "@/features/vignoble/queries/get-aop-communes-in-bbox";
 
-import { computeMultiPolygonBounds } from "../geo/geometry";
+import { computeMultiPolygonBounds, unionBounds } from "../geo/geometry";
 import type { Bounds } from "../geo/geometry";
 import { raisePlaceLabelsToTop } from "../map-label-utils";
 import type { AopFeature } from "./aop-features";
@@ -43,9 +43,19 @@ type UseAopLayerResult = {
   toggle: (bbox: Bounds | null, regionId?: string) => Promise<void>;
   /** Return the bounding box of a loaded AOP by id, or null if not found. */
   getBoundsForAop: (id: number) => Bounds | null;
-  /** Visually highlight one AOP (dimming all others). Pass null to reset. */
-  highlightAop: (id: number | null) => void;
+  /** Union bounds of several loaded AOPs (e.g. parent + DGC children). */
+  getBoundsForAops: (ids: number[]) => Bounds | null;
+  /** Visually highlight one or more AOPs (dimming all others). Pass null / [] to reset. */
+  highlightAop: (id: number | number[] | null) => void;
 };
+
+function paintHighlightExpression(ids: number[]) {
+  if (ids.length === 0) return null;
+  if (ids.length === 1) {
+    return ["==", ["id"], ids[0]] as unknown[];
+  }
+  return ["in", ["id"], ["literal", ids]] as unknown[];
+}
 
 /**
  * Loads AOP communes inside a bbox and renders them as a fill + outline layer
@@ -63,7 +73,7 @@ export function useAopLayer(
 
   const cleanupRef = useRef<(() => void) | null>(null);
   const featuresRef = useRef<AopFeature[]>([]);
-  const selectedAopIdRef = useRef<number | null>(null);
+  const selectedAopIdsRef = useRef<number[]>([]);
 
   // Keep the latest click handler in a ref so the listener attached inside
   // `show()` always calls the freshest closure without re-attaching.
@@ -84,7 +94,7 @@ export function useAopLayer(
     setVisible(false);
     setAopItems([]);
     featuresRef.current = [];
-    selectedAopIdRef.current = null;
+    selectedAopIdsRef.current = [];
   }, [runCleanup]);
 
   const getBoundsForAop = useCallback((id: number): Bounds | null => {
@@ -93,11 +103,15 @@ export function useAopLayer(
     return computeMultiPolygonBounds(feature.geometry);
   }, []);
 
-  const highlightAop = useCallback(
-    (id: number | null) => {
-      selectedAopIdRef.current = id;
+  const getBoundsForAops = useCallback((ids: number[]): Bounds | null => {
+    if (ids.length === 0) return null;
+    return unionBounds(ids.map((id) => getBoundsForAop(id)));
+  }, [getBoundsForAop]);
+
+  const applyHighlightPaint = useCallback(
+    (ids: number[]) => {
       if (!map) return;
-      if (id == null) {
+      if (ids.length === 0) {
         if (map.getLayer(aopFillLayerId)) {
           map.setPaintProperty(aopFillLayerId, "fill-opacity", 0.58);
         }
@@ -105,23 +119,35 @@ export function useAopLayer(
           map.setPaintProperty(aopOutlineLayerId, "line-width", 0.5);
           map.setPaintProperty(aopOutlineLayerId, "line-color", "rgba(0,0,0,0.10)");
         }
-      } else {
-        if (map.getLayer(aopFillLayerId)) {
-          map.setPaintProperty(aopFillLayerId, "fill-opacity", [
-            "case", ["==", ["id"], id], 0.9, 0.2,
-          ]);
-        }
-        if (map.getLayer(aopOutlineLayerId)) {
-          map.setPaintProperty(aopOutlineLayerId, "line-width", [
-            "case", ["==", ["id"], id], 3, 0.85,
-          ]);
-          map.setPaintProperty(aopOutlineLayerId, "line-color", [
-            "case", ["==", ["id"], id], "rgba(0,0,0,0.55)", "rgba(0,0,0,0.14)",
-          ]);
-        }
+        return;
+      }
+      const match = paintHighlightExpression(ids);
+      if (!match) return;
+      if (map.getLayer(aopFillLayerId)) {
+        map.setPaintProperty(aopFillLayerId, "fill-opacity", [
+          "case", match, 0.9, 0.2,
+        ]);
+      }
+      if (map.getLayer(aopOutlineLayerId)) {
+        map.setPaintProperty(aopOutlineLayerId, "line-width", [
+          "case", match, 3, 0.85,
+        ]);
+        map.setPaintProperty(aopOutlineLayerId, "line-color", [
+          "case", match, "rgba(0,0,0,0.55)", "rgba(0,0,0,0.14)",
+        ]);
       }
     },
     [map],
+  );
+
+  const highlightAop = useCallback(
+    (id: number | number[] | null) => {
+      const ids =
+        id == null ? [] : Array.isArray(id) ? id.filter((n) => Number.isFinite(n)) : [id];
+      selectedAopIdsRef.current = ids;
+      applyHighlightPaint(ids);
+    },
+    [applyHighlightPaint],
   );
 
   const show = useCallback(
@@ -140,7 +166,7 @@ export function useAopLayer(
         // so they remain visible (and clickable) where they overlap.
         const features = buildAopFeatures(aops);
         featuresRef.current = features;
-        selectedAopIdRef.current = null;
+        selectedAopIdsRef.current = [];
 
         setAopItems(
           features
@@ -194,21 +220,9 @@ export function useAopLayer(
         });
 
         const resetHoverPaint = () => {
-          const selId = selectedAopIdRef.current;
-          if (selId != null) {
-            if (map.getLayer(aopFillLayerId)) {
-              map.setPaintProperty(aopFillLayerId, "fill-opacity", [
-                "case", ["==", ["id"], selId], 0.9, 0.2,
-              ]);
-            }
-            if (map.getLayer(aopOutlineLayerId)) {
-              map.setPaintProperty(aopOutlineLayerId, "line-width", [
-                "case", ["==", ["id"], selId], 3, 0.85,
-              ]);
-              map.setPaintProperty(aopOutlineLayerId, "line-color", [
-                "case", ["==", ["id"], selId], "rgba(0,0,0,0.55)", "rgba(0,0,0,0.14)",
-              ]);
-            }
+          const selIds = selectedAopIdsRef.current;
+          if (selIds.length > 0) {
+            applyHighlightPaint(selIds);
             return;
           }
           if (map.getLayer(aopFillLayerId)) {
@@ -344,7 +358,7 @@ export function useAopLayer(
         setLoading(false);
       }
     },
-    [map, runCleanup],
+    [map, runCleanup, applyHighlightPaint],
   );
 
   const toggle = useCallback(
@@ -365,5 +379,15 @@ export function useAopLayer(
     };
   }, [map, runCleanup]);
 
-  return { visible, loading, aopItems, show, hide, toggle, getBoundsForAop, highlightAop };
+  return {
+    visible,
+    loading,
+    aopItems,
+    show,
+    hide,
+    toggle,
+    getBoundsForAop,
+    getBoundsForAops,
+    highlightAop,
+  };
 }

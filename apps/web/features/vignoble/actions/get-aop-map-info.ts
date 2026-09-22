@@ -3,12 +3,21 @@
 import { createClient } from "@/lib/supabase/server";
 import { getRelatedGrapesForAppellation } from "@/features/cepages/queries/grapes.queries";
 import type { RelatedGrape } from "@/features/cepages/types";
-import { getDgcParentForChild } from "@/features/vignoble/queries/aop-dgc.queries";
+import {
+  getDgcChildrenForParent,
+  getDgcParentForChild,
+} from "@/features/vignoble/queries/aop-dgc.queries";
 
 export type AopMapGrape = Pick<
   RelatedGrape,
   "id" | "slug" | "name_fr" | "is_primary"
 >;
+
+export type AopMapDgcChild = {
+  id: number;
+  slug: string;
+  name: string;
+};
 
 export type AopMapInfo = {
   id: number;
@@ -24,6 +33,13 @@ export type AopMapInfo = {
   fiche_slug: string | null;
   /** When set, fiche should highlight this DGC tab (`?dgc=`). */
   dgc_slug: string | null;
+  /**
+   * AOP ids to highlight + fit on the map when this polygon is selected.
+   * Parent click → parent + all DGC children; child click → that child only.
+   */
+  family_ids: number[];
+  /** DGC children of this AOP when it is a parent (for the map panel list). */
+  dgc_children: AopMapDgcChild[];
 };
 
 type SubregionEmbed = {
@@ -87,6 +103,11 @@ export async function getAopMapInfo(aopId: number): Promise<AopMapInfo | null> {
   const dgcParent = await getDgcParentForChild(aopId);
   const isChild = Boolean(dgcParent && dgcParent.slug !== (aop.slug as string));
 
+  const dgcChildren = isChild ? [] : await getDgcChildrenForParent(aopId);
+  const family_ids = isChild
+    ? [aopId]
+    : [aopId, ...dgcChildren.map((c) => c.id)];
+
   return {
     id: aop.id as number,
     name: aop.name as string,
@@ -101,5 +122,11 @@ export async function getAopMapInfo(aopId: number): Promise<AopMapInfo | null> {
       ? (dgcParent?.slug ?? (aop.slug as string))
       : (aop.slug as string),
     dgc_slug: isChild ? (aop.slug as string) : null,
+    family_ids,
+    dgc_children: dgcChildren.map((c) => ({
+      id: c.id,
+      slug: c.slug,
+      name: c.name,
+    })),
   };
 }
