@@ -1,18 +1,59 @@
-.env
-.env.qa
-.env.local
-apps/web/.env
-apps/web/.env.local
-apps/cms/.env
-apps/cms/.env.local
+# Dependencies
 node_modules/
-apps/*/node_modules/
+**/node_modules/
+
+# Builds
 .next/
-apps/*/.next/
+**/.next/
+dist/
+**/dist/
+build/
+**/build/
+coverage/
+**/coverage/
+out/
+**/out/
+*.tsbuildinfo
+
+# Vercel
+.vercel/
+**/.vercel/
+.turbo/
+**/.turbo/
+
+# Env — keep examples
+.env
+.env.*
+!.env.example
+!.env.qa.example
+!.env.*.example
+apps/*/.env
+apps/*/.env.*
+!apps/*/.env.example
+!apps/*/.env.*.example
+
+# QA / Playwright artifacts
 qa-artifacts/
 QA_REPORT.md
 playwright-report/
 test-results/
+blob-report/
+playwright/.cache/
+
+# OS / editor
 .DS_Store
-*.tsbuildinfo
+**/.DS_Store
+.idea/
+.vscode/
 .cursor/
+*.swp
+*~
+
+# Logs / caches
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+*.log
+.cache/
+**/.cache/
