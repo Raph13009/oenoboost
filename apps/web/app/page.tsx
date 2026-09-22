@@ -15,7 +15,6 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { getContent } from "@/lib/i18n/get-content";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { getServerLocale } from "@/lib/i18n/server";
-import { isPremiumPlan } from "@/lib/favorites/constants";
 
 import { GrapeFavoriteButton } from "@/features/cepages/components/grape-favorite-button";
 import type { GrapeFavoriteLabels } from "@/features/cepages/components/grape-favorite-button";
@@ -24,6 +23,7 @@ import type { AppellationFavoriteLabels } from "@/features/vignoble/components/a
 import { buildAopDetailHref } from "@/features/vignoble/lib/aop-slug";
 import { SoilFavoriteButton } from "@/features/sols/components/soil-favorite-button";
 import type { SoilFavoriteLabels } from "@/features/sols/components/soil-favorite-button";
+import { DailyQuestionBubble } from "@/features/quiz/components/daily-question-bubble";
 import { DailyQuestionCta } from "@/features/quiz/components/daily-question-cta";
 
 import { getFavoriteGrapesForUser } from "@/features/cepages/queries/favorites.queries";
@@ -32,7 +32,6 @@ import { getFavoriteAppellationsForUser } from "@/features/vignoble/queries/aop-
 import type { FavoriteAppellationRow } from "@/features/vignoble/queries/aop-favorites.queries";
 import { getFavoriteSoilsForUser } from "@/features/sols/queries/soil-favorites.queries";
 import type { FavoriteSoilRow } from "@/features/sols/queries/soil-favorites.queries";
-import { getDailyQuestionForUser } from "@/features/quiz/queries/daily-question.queries";
 
 type QuizPill = {
   href: string;
@@ -111,12 +110,6 @@ export default async function HomePage() {
         ...soilRows.map((row) => ({ type: "soil" as const, row })),
       ].slice(0, 5)
     : [];
-
-  const daily = await getDailyQuestionForUser({
-    userId: user?.id ?? null,
-    locale,
-    isPremium: isPremiumPlan(user?.plan),
-  });
 
   const grapeFavoriteLabels: GrapeFavoriteLabels = {
     favoriteAria: dict.cepages.favoriteAddAria,
@@ -204,35 +197,7 @@ export default async function HomePage() {
 
   return (
     <div className="mx-auto flex w-full max-w-[760px] min-w-0 flex-col overflow-x-hidden pb-6">
-      {daily.questionId ? (
-        <section className="relative mt-6 w-full overflow-hidden rounded-[28px] border border-white/65 bg-[linear-gradient(135deg,rgba(124,39,54,0.12),rgba(255,255,255,0.78)_40%,rgba(244,225,212,0.82))] px-4 py-4 shadow-[0_16px_34px_rgba(91,54,35,0.1)] backdrop-blur-sm md:px-5 md:py-5">
-          <div className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-white/45 blur-2xl" />
-          <div className="pointer-events-none absolute bottom-0 left-8 h-20 w-28 rounded-full bg-primary/10 blur-2xl" />
-          <div className="relative flex flex-col gap-4">
-            <div className="flex min-w-0 items-start justify-between gap-3">
-              <p className="min-w-0 flex-1 font-mono text-xs font-semibold uppercase tracking-[0.16em] text-wine/70">
-                {dict.home.dailyQuestionTitle}
-              </p>
-              <DailyQuestionCta
-                href="/quiz/daily"
-                isLoggedIn={!!user}
-                label={dict.home.dailyAnswerCta}
-                authCopy={dailyQuestionAuthCopy}
-                className="quiz-fab shrink-0 rounded-2xl bg-primary px-3.5 py-2.5 text-sm font-semibold text-primary-foreground shadow-[0_14px_32px_rgba(124,39,54,0.22)] transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-wine-dark active:scale-[0.985]"
-              />
-            </div>
-            <p className="max-w-[24rem] font-heading text-[1.25rem] font-semibold leading-snug tracking-tight text-foreground md:max-w-[28rem] md:text-[1.4rem]">
-              {daily.prompt}
-            </p>
-          </div>
-        </section>
-      ) : null}
-
-      <section
-        className={`flex w-full min-w-0 flex-col gap-4 ${
-          daily.questionId ? "mt-12" : "mt-6"
-        }`}
-      >
+      <section className="mt-6 flex w-full min-w-0 flex-col gap-4">
         <h2 className="font-heading text-[1.55rem] font-semibold tracking-tight text-foreground">
           {locale === "en" ? "Modules" : "Modules"}
         </h2>
@@ -264,31 +229,23 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="mt-10 flex w-full min-w-0 flex-col gap-4 md:mt-12">
-        <h2 className="font-heading text-[1.55rem] font-semibold tracking-tight text-foreground">
-          {quizSectionTitle}
-        </h2>
-        <ul className="flex w-full min-w-0 list-none flex-col gap-3 p-0">
-          <li>
-            <DailyQuestionCta
-              href="/quiz/daily"
-              isLoggedIn={!!user}
-              label={dict.home.dailyQuestionTitle}
-              authCopy={dailyQuestionAuthCopy}
-              className="group flex h-10.5 w-full min-w-0 max-w-full items-center justify-between gap-2.5 rounded-full border border-primary/20 bg-primary px-3.5 text-[0.88rem] font-semibold text-primary-foreground shadow-[0_10px_20px_rgba(124,39,54,0.18)] transition-colors duration-200 ease-out active:opacity-90 hover:bg-wine-dark"
-            >
-              <span className="flex min-w-0 items-center gap-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20 text-white">
-                  <Sparkles className="h-3 w-3" strokeWidth={2} />
-                </span>
-                <span className="truncate">{dict.home.dailyQuestionTitle}</span>
-              </span>
-              <ChevronRight
-                className="h-3.5 w-3.5 shrink-0 text-white/80"
-                strokeWidth={2}
+      <section className="relative mt-10 flex w-full min-w-0 flex-col gap-4 md:mt-12">
+        <div className="relative flex min-w-0 items-center justify-between gap-3 pr-1">
+          <h2 className="min-w-0 font-heading text-[1.55rem] font-semibold tracking-tight text-foreground">
+            {quizSectionTitle}
+          </h2>
+          <div className="relative shrink-0 sm:translate-x-1 md:translate-x-2">
+            <div className="quiz-daily-bubble-float origin-top-right">
+              <DailyQuestionBubble
+                href="/quiz/daily"
+                isLoggedIn={!!user}
+                title={dict.home.dailyQuestionTitle}
+                authCopy={dailyQuestionAuthCopy}
               />
-            </DailyQuestionCta>
-          </li>
+            </div>
+          </div>
+        </div>
+        <ul className="flex w-full min-w-0 list-none flex-col gap-3 p-0">
           {quizPills.map((pill) => (
             <li key={pill.href}>
               <DailyQuestionCta
