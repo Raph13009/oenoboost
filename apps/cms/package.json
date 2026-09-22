@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "tsx --test lib/richtext-html.test.ts lib/aop-wine-color-breakdown.test.ts \"app/admin/(cms)/appellations/link-sync.test.ts\""
+    "test": "tsx --test lib/richtext-html.test.ts lib/aop-wine-color-breakdown.test.ts lib/aop-slug.test.ts lib/vinification-steps.test.ts \"app/admin/(cms)/appellations/link-sync.test.ts\""
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",

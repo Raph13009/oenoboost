@@ -57,19 +57,47 @@ export function clampWinePct(value: number): number {
   return Math.min(100, Math.max(0, Math.round(value)));
 }
 
+const WINE_COLOR_FIELDS: Array<keyof WineColorBreakdown> = [
+  "wine_pct_red",
+  "wine_pct_rose",
+  "wine_pct_white",
+  "wine_pct_sparkling",
+  "wine_pct_liqueur",
+];
+
+/**
+ * Apply one CRM editor change while keeping the total ≤ 100%.
+ * Increasing a color automatically reduces other non-zero colors as needed.
+ * Decreasing a color does not refill others (totals below 100% are allowed).
+ */
+export function applyWineColorPctChange(
+  current: WineColorBreakdown,
+  field: keyof WineColorBreakdown,
+  raw: number,
+): WineColorBreakdown {
+  const next: WineColorBreakdown = { ...current, [field]: clampWinePct(raw) };
+  let overflow = wineColorBreakdownTotal(next) - 100;
+  if (overflow <= 0) return next;
+
+  for (const other of WINE_COLOR_FIELDS) {
+    if (other === field) continue;
+    if (overflow <= 0) break;
+    const currentOther = next[other] ?? 0;
+    if (currentOther <= 0) continue;
+    const reduction = Math.min(currentOther, overflow);
+    next[other] = currentOther - reduction;
+    overflow -= reduction;
+  }
+
+  return next;
+}
+
 /** Validates breakdown before save. Returns an error message or null if OK. */
 export function validateWineColorBreakdown(pct: WineColorBreakdown): string | null {
   if (!hasWineColorBreakdownData(pct)) return null;
 
-  const fields: Array<[keyof WineColorBreakdown, number | null]> = [
-    ["wine_pct_red", pct.wine_pct_red],
-    ["wine_pct_rose", pct.wine_pct_rose],
-    ["wine_pct_white", pct.wine_pct_white],
-    ["wine_pct_sparkling", pct.wine_pct_sparkling],
-    ["wine_pct_liqueur", pct.wine_pct_liqueur],
-  ];
-
-  for (const [, value] of fields) {
+  for (const field of WINE_COLOR_FIELDS) {
+    const value = pct[field];
     if (value === null || value === undefined) {
       return "Renseignez les cinq pourcentages ou activez « Données non renseignées ».";
     }
@@ -78,8 +106,8 @@ export function validateWineColorBreakdown(pct: WineColorBreakdown): string | nu
     }
   }
 
-  if (wineColorBreakdownTotal(pct) !== 100) {
-    return "La somme des pourcentages doit être égale à 100 %.";
+  if (wineColorBreakdownTotal(pct) > 100) {
+    return "La somme des pourcentages ne peut pas dépasser 100 %.";
   }
 
   return null;

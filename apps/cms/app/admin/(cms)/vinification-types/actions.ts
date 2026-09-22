@@ -1,6 +1,11 @@
 "use server";
 
 import { getSupabaseAdmin } from "@/lib/supabase";
+import {
+  buildNewVinificationStepInsert,
+  nextVinificationStepOrder,
+  vinificationStepFormToRow,
+} from "@/lib/vinification-steps";
 import { revalidatePath } from "next/cache";
 
 export type VinificationType = {
@@ -120,20 +125,6 @@ export async function deleteVinificationType(id: string): Promise<{ error?: stri
 
 type VinificationStepForm = Omit<VinificationStep, "created_at" | "updated_at">;
 
-function stepFormToRow(form: VinificationStepForm): Record<string, unknown> {
-  return {
-    vinification_type_id: form.vinification_type_id,
-    step_order: form.step_order,
-    icon_url: form.icon_url || null,
-    title_fr: form.title_fr || "",
-    title_en: form.title_en || null,
-    summary_fr: form.summary_fr || null,
-    summary_en: form.summary_en || null,
-    detail_fr: form.detail_fr || null,
-    detail_en: form.detail_en || null,
-  };
-}
-
 export async function getVinificationSteps(
   vinificationTypeId: string
 ): Promise<VinificationStep[]> {
@@ -160,14 +151,12 @@ export async function createVinificationStep(
 
   if (readError) return { error: readError.message };
 
-  const nextStepOrder = ((existing?.[0] as { step_order?: number } | undefined)?.step_order ?? 0) + 1;
+  const nextStepOrder = nextVinificationStepOrder(
+    (existing?.[0] as { step_order?: number } | undefined)?.step_order
+  );
   const { data, error } = await supabase
     .from("vinification_steps")
-    .insert({
-      vinification_type_id: vinificationTypeId,
-      step_order: nextStepOrder,
-      title_fr: `Étape ${nextStepOrder}`,
-    })
+    .insert(buildNewVinificationStepInsert(vinificationTypeId, nextStepOrder))
     .select(VINIFICATION_STEP_COLUMNS)
     .single();
 
@@ -181,7 +170,7 @@ export async function updateVinificationStep(
   form: VinificationStepForm
 ): Promise<{ error?: string }> {
   const supabase = getSupabaseAdmin();
-  const row = stepFormToRow(form);
+  const row = vinificationStepFormToRow(form);
   const { error } = await supabase.from("vinification_steps").update(row).eq("id", id);
   if (error) return { error: error.message };
   revalidatePath("/admin/vinification-types");
