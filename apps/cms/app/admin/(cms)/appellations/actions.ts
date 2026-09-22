@@ -43,6 +43,8 @@ export type Appellation = {
   climate_fr: string | null;
   climate_en: string | null;
   is_premium: boolean;
+  /** Parent AOP container for DGC / child appellations (#22). */
+  is_dgc_parent: boolean;
   status: string;
   published_at: string | null;
   created_at: string;
@@ -78,6 +80,16 @@ export type AppellationLinkedGrape = {
   slug: string;
   /** true = cépage principal / classique ; false = accessoire */
   is_primary: boolean;
+};
+
+export type AppellationDgcChild = {
+  id: string;
+  name: string;
+  slug: string;
+  explanation_fr: string | null;
+  explanation_en: string | null;
+  sort_order: number;
+  area_hectares: number | null;
 };
 
 type LinkedSoilRow = {
@@ -125,7 +137,7 @@ function toNumberId(id: string | number | null | undefined): number | null {
 
 const AOP_LIST_COLUMNS = "id,slug,name,status,updated_at";
 const AOP_DETAIL_COLUMNS =
-  "id,slug,name,area_m2,area_hectares,recognition_year,producer_count,production_volume_hl,price_range_min_eur,price_range_max_eur,history_fr,history_en,colors_grapes_fr,colors_grapes_en,soils_description_fr,soils_description_en,climate_fr,climate_en,wine_pct_red,wine_pct_rose,wine_pct_white,wine_pct_sparkling,wine_pct_liqueur,is_premium,status,published_at,created_at,updated_at,deleted_at";
+  "id,slug,name,area_m2,area_hectares,recognition_year,producer_count,production_volume_hl,price_range_min_eur,price_range_max_eur,history_fr,history_en,colors_grapes_fr,colors_grapes_en,soils_description_fr,soils_description_en,climate_fr,climate_en,wine_pct_red,wine_pct_rose,wine_pct_white,wine_pct_sparkling,wine_pct_liqueur,is_premium,is_dgc_parent,status,published_at,created_at,updated_at,deleted_at";
 
 function trimNullableText(value: string | null | undefined): string | null {
   if (value == null) return null;
@@ -423,6 +435,7 @@ export async function getAppellation(id: string): Promise<Appellation | null> {
     wine_pct_sparkling: (row.wine_pct_sparkling as number | null) ?? null,
     wine_pct_liqueur: (row.wine_pct_liqueur as number | null) ?? null,
     is_premium: !!row.is_premium,
+    is_dgc_parent: !!row.is_dgc_parent,
     status: (row.status as string) ?? "draft",
     published_at: (row.published_at as string | null) ?? null,
     created_at: (row.created_at as string) ?? "",
@@ -473,6 +486,7 @@ function formToRow(form: AppellationForm): Record<string, unknown> {
     wine_pct_sparkling: form.wine_pct_sparkling ?? null,
     wine_pct_liqueur: form.wine_pct_liqueur ?? null,
     is_premium: !!form.is_premium,
+    is_dgc_parent: !!form.is_dgc_parent,
     status: form.status || "draft",
     published_at: form.published_at || null,
   };
@@ -920,6 +934,277 @@ export async function removeAppellationGrapeLink(
     .delete()
     .eq("aop_id", aopId)
     .eq("grape_id", grapeId);
+  if (error) return { error: error.message };
+  revalidatePath("/admin/appellations");
+  return {};
+}
+
+async function getAopRegionId(aopId: number): Promise<string | null> {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("aop_subregion_link")
+    .select("subregions!subregion_id(region_id)")
+    .eq("aop_id", aopId)
+    .limit(1);
+  if (error) throw new Error(error.message);
+  const row = data?.[0] as
+    | { subregions: { region_id: string | null } | { region_id: string | null }[] | null }
+    | undefined;
+  const sub = getFirstRelation(row?.subregions ?? null);
+  return sub?.region_id ?? null;
+}
+
+export async function getAppellationDgcChildren(
+  appellationId: string
+): Promise<AppellationDgcChild[]> {
+  const parentId = toNumberId(appellationId);
+  if (parentId === null) return [];
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("aop_dgc_link")
+    .select(
+      `
+      explanation_fr,
+      explanation_en,
+      sort_order,
+      child:child_aop_id(
+        id,
+        name,
+        slug,
+        area_hectares,
+        deleted_at
+      )
+    `
+    )
+    .eq("parent_aop_id", parentId)
+    .order("sort_order", { ascending: true });
+  if (error) throw new Error(error.message);
+
+  return (data ?? [])
+    .map((row) => {
+      const child = getFirstRelation(
+        (
+          row as {
+            child:
+              | {
+                  id: number;
+                  name: string;
+                  slug: string;
+                  area_hectares: number | null;
+                  deleted_at: string | null;
+                }
+              | {
+                  id: number;
+                  name: string;
+                  slug: string;
+                  area_hectares: number | null;
+                  deleted_at: string | null;
+                }[]
+              | null;
+          }
+        ).child
+      );
+      if (!child || child.deleted_at) return null;
+      return {
+        id: String(child.id),
+        name: child.name,
+        slug: child.slug,
+        explanation_fr: (row as { explanation_fr: string | null }).explanation_fr,
+        explanation_en: (row as { explanation_en: string | null }).explanation_en,
+        sort_order: Number((row as { sort_order: number }).sort_order ?? 0),
+        area_hectares: child.area_hectares ?? null,
+      };
+    })
+    .filter((row): row is AppellationDgcChild => row !== null);
+}
+
+export async function searchAopsForDgcChildren(
+  parentAppellationId: string,
+  query: string
+): Promise<Array<{ id: string; name: string; slug: string }>> {
+  const parentId = toNumberId(parentAppellationId);
+  if (parentId === null) return [];
+  const supabase = getSupabaseAdmin();
+  const regionId = await getAopRegionId(parentId);
+  if (!regionId) return [];
+
+  const { data: subregions, error: subErr } = await supabase
+    .from("subregions")
+    .select("id")
+    .eq("region_id", regionId)
+    .is("deleted_at", null);
+  if (subErr) throw new Error(subErr.message);
+
+  const subIds = (subregions ?? [])
+    .map((s) => toNumberId((s as { id: number | string }).id))
+    .filter((id): id is number => id !== null);
+  if (subIds.length === 0) return [];
+
+  const { data: links, error: linkErr } = await supabase
+    .from("aop_subregion_link")
+    .select("aop_id")
+    .in("subregion_id", subIds);
+  if (linkErr) throw new Error(linkErr.message);
+
+  const candidateIds = Array.from(
+    new Set(
+      (links ?? [])
+        .map((l) => (l as { aop_id: number }).aop_id)
+        .filter((id) => id !== parentId)
+    )
+  );
+  if (candidateIds.length === 0) return [];
+
+  const { data: taken, error: takenErr } = await supabase
+    .from("aop_dgc_link")
+    .select("child_aop_id, parent_aop_id");
+  if (takenErr) throw new Error(takenErr.message);
+
+  const takenByOther = new Set(
+    (taken ?? [])
+      .filter((row) => (row as { parent_aop_id: number }).parent_aop_id !== parentId)
+      .map((row) => (row as { child_aop_id: number }).child_aop_id)
+  );
+  const alreadyMine = new Set(
+    (taken ?? [])
+      .filter((row) => (row as { parent_aop_id: number }).parent_aop_id === parentId)
+      .map((row) => (row as { child_aop_id: number }).child_aop_id)
+  );
+
+  const availableIds = candidateIds.filter(
+    (id) => !takenByOther.has(id) && !alreadyMine.has(id)
+  );
+  if (availableIds.length === 0) return [];
+
+  const trimmed = query.trim();
+  let request = supabase
+    .from("aop")
+    .select("id,name,slug")
+    .in("id", availableIds)
+    .is("deleted_at", null)
+    .order("name", { ascending: true })
+    .limit(12);
+
+  if (trimmed) {
+    const escaped = trimmed.replaceAll(",", " ");
+    request = request.or(`name.ilike.%${escaped}%,slug.ilike.%${escaped}%`);
+  }
+
+  const { data, error } = await request;
+  if (error) throw new Error(error.message);
+
+  return ((data ?? []) as Array<{ id: number; name: string; slug: string }>).map(
+    (row) => ({
+      id: String(row.id),
+      name: row.name,
+      slug: row.slug,
+    })
+  );
+}
+
+export async function addAppellationDgcChild(
+  parentAppellationId: string,
+  childAppellationId: string
+): Promise<{ error?: string }> {
+  const parentId = toNumberId(parentAppellationId);
+  const childId = toNumberId(childAppellationId);
+  if (parentId === null || childId === null) {
+    return { error: "Identifiant AOP invalide." };
+  }
+  if (parentId === childId) {
+    return { error: "Une AOP ne peut pas être sa propre DGC." };
+  }
+
+  const supabase = getSupabaseAdmin();
+
+  const parentRegion = await getAopRegionId(parentId);
+  const childRegion = await getAopRegionId(childId);
+  if (!parentRegion || !childRegion || parentRegion !== childRegion) {
+    return { error: "La DGC doit appartenir à la même région viticole." };
+  }
+
+  const { data: existing, error: existingErr } = await supabase
+    .from("aop_dgc_link")
+    .select("parent_aop_id")
+    .eq("child_aop_id", childId)
+    .maybeSingle();
+  if (existingErr) return { error: existingErr.message };
+  if (existing && (existing as { parent_aop_id: number }).parent_aop_id !== parentId) {
+    return { error: "Cette appellation est déjà rattachée à une autre AOP parente." };
+  }
+
+  const { data: siblings } = await supabase
+    .from("aop_dgc_link")
+    .select("sort_order")
+    .eq("parent_aop_id", parentId)
+    .order("sort_order", { ascending: false })
+    .limit(1);
+  const nextOrder =
+    siblings && siblings.length > 0
+      ? Number((siblings[0] as { sort_order: number }).sort_order) + 1
+      : 0;
+
+  const { error } = await supabase.from("aop_dgc_link").upsert(
+    {
+      parent_aop_id: parentId,
+      child_aop_id: childId,
+      sort_order: nextOrder,
+    },
+    { onConflict: "parent_aop_id,child_aop_id" }
+  );
+  if (error) {
+    if (error.code === "23505") {
+      return { error: "Cette appellation est déjà rattachée à une autre AOP parente." };
+    }
+    return { error: error.message };
+  }
+
+  await supabase.from("aop").update({ is_dgc_parent: true }).eq("id", parentId);
+
+  revalidatePath("/admin/appellations");
+  return {};
+}
+
+export async function updateAppellationDgcChildExplanation(
+  parentAppellationId: string,
+  childAppellationId: string,
+  explanationFr: string | null,
+  explanationEn: string | null
+): Promise<{ error?: string }> {
+  const parentId = toNumberId(parentAppellationId);
+  const childId = toNumberId(childAppellationId);
+  if (parentId === null || childId === null) {
+    return { error: "Identifiant AOP invalide." };
+  }
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase
+    .from("aop_dgc_link")
+    .update({
+      explanation_fr: trimNullableText(explanationFr),
+      explanation_en: trimNullableText(explanationEn),
+    })
+    .eq("parent_aop_id", parentId)
+    .eq("child_aop_id", childId);
+  if (error) return { error: error.message };
+  revalidatePath("/admin/appellations");
+  return {};
+}
+
+export async function removeAppellationDgcChild(
+  parentAppellationId: string,
+  childAppellationId: string
+): Promise<{ error?: string }> {
+  const parentId = toNumberId(parentAppellationId);
+  const childId = toNumberId(childAppellationId);
+  if (parentId === null || childId === null) {
+    return { error: "Identifiant AOP invalide." };
+  }
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase
+    .from("aop_dgc_link")
+    .delete()
+    .eq("parent_aop_id", parentId)
+    .eq("child_aop_id", childId);
   if (error) return { error: error.message };
   revalidatePath("/admin/appellations");
   return {};

@@ -387,6 +387,8 @@ const fr = {
     accessoryGrapes: "Cépages accessoires",
     relatedSoilsPreview: "Sols",
     freePreviewTitle: "Aperçu",
+    dgcSectionTitle: "Dénominations géographiques (DGC)",
+    dgcEmptyExplanation: "Pas encore d’explication pour cette DGC.",
     regionsListTitle: "Régions viticoles",
     regionsListIntro:
       "Parcourez les grandes régions viticoles françaises, leur histoire et leurs sous-régions.",

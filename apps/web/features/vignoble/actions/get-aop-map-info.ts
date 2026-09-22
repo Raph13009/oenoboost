@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getRelatedGrapesForAppellation } from "@/features/cepages/queries/grapes.queries";
 import type { RelatedGrape } from "@/features/cepages/types";
+import { getDgcParentForChild } from "@/features/vignoble/queries/aop-dgc.queries";
 
 export type AopMapGrape = Pick<
   RelatedGrape,
@@ -11,13 +12,18 @@ export type AopMapGrape = Pick<
 
 export type AopMapInfo = {
   id: number;
-  slug: string;
+  /** Display name of the clicked polygon (child or parent). */
   name: string;
   area_hectares: number | null;
   is_grand_cru: boolean;
+  grapes: AopMapGrape[];
+  /** Region used for the "open fiche" href (parent when linked). */
   region_slug: string | null;
   subregion_slug: string | null;
-  grapes: AopMapGrape[];
+  /** Slug of the fiche to open (parent AOP when this polygon is a DGC child). */
+  fiche_slug: string | null;
+  /** When set, fiche should highlight this DGC tab (`?dgc=`). */
+  dgc_slug: string | null;
 };
 
 type SubregionEmbed = {
@@ -78,14 +84,22 @@ export async function getAopMapInfo(aopId: number): Promise<AopMapInfo | null> {
     is_primary: g.is_primary,
   }));
 
+  const dgcParent = await getDgcParentForChild(aopId);
+  const isChild = Boolean(dgcParent && dgcParent.slug !== (aop.slug as string));
+
   return {
     id: aop.id as number,
-    slug: aop.slug as string,
     name: aop.name as string,
     area_hectares: (aop.area_hectares ?? null) as number | null,
     is_grand_cru: Boolean(aop.is_grand_cru),
-    region_slug: region?.slug ?? null,
-    subregion_slug: sub?.slug ?? null,
     grapes,
+    region_slug: isChild
+      ? (dgcParent?.region_slug ?? region?.slug ?? null)
+      : (region?.slug ?? null),
+    subregion_slug: sub?.slug ?? null,
+    fiche_slug: isChild
+      ? (dgcParent?.slug ?? (aop.slug as string))
+      : (aop.slug as string),
+    dgc_slug: isChild ? (aop.slug as string) : null,
   };
 }

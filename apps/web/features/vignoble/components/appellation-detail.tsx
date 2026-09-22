@@ -5,6 +5,7 @@ import type { Locale } from "@/lib/i18n/config";
 import { getContent } from "@/lib/i18n/get-content";
 import type { RelatedSoil } from "@/features/sols/types";
 import type { RelatedGrape } from "@/features/cepages/types";
+import type { DgcChildSummary } from "../queries/aop-dgc.queries";
 import { PremiumGate } from "@/components/shared/premium-gate";
 
 import { getWineColorBreakdown } from "../lib/wine-color-breakdown";
@@ -12,6 +13,7 @@ import type { AopWineColorPieChartLabels } from "./aop-wine-color-pie-chart";
 import { AopWineColorPieChart } from "./aop-wine-color-pie-chart";
 import type { AppellationFavoriteLabels } from "./appellation-favorite-button";
 import { AppellationFavoriteButton } from "./appellation-favorite-button";
+import { AppellationDgcSection } from "./appellation-dgc-section";
 import { RichText } from "./rich-text";
 
 type AppellationDetailProps = {
@@ -29,6 +31,8 @@ type AppellationDetailProps = {
   userPlan: "free" | "premium";
   relatedSoils?: RelatedSoil[];
   relatedGrapes?: RelatedGrape[];
+  dgcChildren?: DgcChildSummary[];
+  highlightedDgcSlug?: string | null;
   soilLabels?: {
     relatedSoils: string;
     emptyRelatedSoils: string;
@@ -38,6 +42,11 @@ type AppellationDetailProps = {
     accessoryGrapes: string;
     relatedSoilsPreview: string;
     freePreviewTitle: string;
+  };
+  dgcLabels?: {
+    sectionTitle: string;
+    areaLabel: string;
+    emptyExplanation: string;
   };
   wineColorLabels?: AopWineColorPieChartLabels;
   climateTitle?: string;
@@ -79,8 +88,11 @@ export function AppellationDetail({
   userPlan,
   relatedSoils = [],
   relatedGrapes = [],
+  dgcChildren = [],
+  highlightedDgcSlug = null,
   soilLabels,
   grapeLabels,
+  dgcLabels,
   wineColorLabels,
   climateTitle,
 }: AppellationDetailProps) {
@@ -433,6 +445,14 @@ export function AppellationDetail({
         </PremiumGate>
       ) : (
         fullBody
+      )}
+      {dgcLabels && dgcChildren.length > 0 && (
+        <AppellationDgcSection
+          items={dgcChildren}
+          locale={locale}
+          highlightedSlug={highlightedDgcSlug}
+          labels={dgcLabels}
+        />
       )}
     </div>
   );

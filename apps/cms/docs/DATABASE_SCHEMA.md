@@ -17,6 +17,7 @@ This CMS package does **not** own a separate schema dump. The public app and CMS
 | AOP ↔ subregion | `aop_subregion_link` → int4 `subregions` |
 | AOP ↔ soil | `aop_soil_link` |
 | AOP ↔ grape | `aop_grape_link` (`is_primary` = main vs accessory) |
+| AOP DGC parent/child | `aop.is_dgc_parent` + `aop_dgc_link` (unique child) |
 | Recognition year | `aop.recognition_year` (`smallint`, nullable, 1800–2100) |
 | Region history | `wine_region_history_milestones` |
 | Content status | `draft` / `published` / `archived` + soft delete via `deleted_at` where present |

@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { getRegionBySlug } from "@/features/vignoble/queries/regions.queries";
@@ -7,7 +7,10 @@ import { getAppellations } from "@/features/vignoble/queries/appellations.querie
 import { AppellationCard } from "@/features/vignoble/components/appellation-card";
 import { AppellationDetail } from "@/features/vignoble/components/appellation-detail";
 import { getAopDetailByRegionAndSlug } from "@/features/vignoble/queries/aop-navigation.queries";
-import { decodeRouteSlug } from "@/features/vignoble/lib/aop-slug";
+import {
+  buildAopDetailHref,
+  decodeRouteSlug,
+} from "@/features/vignoble/lib/aop-slug";
 import { isAppellationFavorited } from "@/features/vignoble/queries/aop-favorites.queries";
 import { getFavoritedContentIds } from "@/features/favorites/queries/favorites.queries";
 import { getServerLocale } from "@/lib/i18n/server";
@@ -19,6 +22,10 @@ import {
   getSoilBySlug,
 } from "@/features/sols/queries/soils.queries";
 import { getRelatedGrapesForAppellation } from "@/features/cepages/queries/grapes.queries";
+import {
+  getDgcChildrenForParent,
+  getDgcParentForChild,
+} from "@/features/vignoble/queries/aop-dgc.queries";
 
 type Props = {
   params: Promise<{ region: string; subregion: string }>;
@@ -28,6 +35,7 @@ type Props = {
     listRegion?: string;
     listSubregion?: string;
     soilSlug?: string;
+    dgc?: string;
   }>;
 };
 
@@ -130,12 +138,28 @@ export default async function RegionSubregionOrAopPage({
 
   if (!aop) notFound();
 
+  // Child DGC → shared parent fiche (#9). Preserve entry context + highlight.
+  const dgcParent = await getDgcParentForChild(aop.appellation.id);
+  if (dgcParent?.region_slug && dgcParent.slug !== aop.appellation.slug) {
+    redirect(
+      buildAopDetailHref(dgcParent.region_slug, dgcParent.slug, {
+        from: qp.from ?? "map",
+        subregion: qp.subregion,
+        listRegion: qp.listRegion,
+        listSubregion: qp.listSubregion,
+        soilSlug: qp.soilSlug,
+        dgc: aop.appellation.slug,
+      }),
+    );
+  }
+
   const user = await getCurrentUser();
   const initialAopFavorited = user
     ? await isAppellationFavorited(user.id, String(aop.appellation.id))
     : false;
   const relatedSoils = await getRelatedSoilsForAppellation(aop.appellation.id);
   const relatedGrapes = await getRelatedGrapesForAppellation(aop.appellation.id);
+  const dgcChildren = await getDgcChildrenForParent(aop.appellation.id);
 
   const isFromFavorites = qp.from === "favorites";
   const isFromList = qp.from === "list";
@@ -240,6 +264,13 @@ export default async function RegionSubregionOrAopPage({
           accessoryGrapes: dict.vignoble.accessoryGrapes,
           relatedSoilsPreview: dict.vignoble.relatedSoilsPreview,
           freePreviewTitle: dict.vignoble.freePreviewTitle,
+        }}
+        dgcChildren={dgcChildren}
+        highlightedDgcSlug={qp.dgc ?? null}
+        dgcLabels={{
+          sectionTitle: dict.vignoble.dgcSectionTitle,
+          areaLabel: dict.vignoble.hectares,
+          emptyExplanation: dict.vignoble.dgcEmptyExplanation,
         }}
         wineColorLabels={{
           title: dict.vignoble.wineColorBreakdownTitle,

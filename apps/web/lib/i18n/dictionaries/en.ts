@@ -388,6 +388,8 @@ const en: Dictionary = {
     accessoryGrapes: "Accessory grape varieties",
     relatedSoilsPreview: "Soils",
     freePreviewTitle: "Preview",
+    dgcSectionTitle: "Geographic denominations (DGC)",
+    dgcEmptyExplanation: "No explanation yet for this DGC.",
     regionsListTitle: "Wine regions",
     regionsListIntro:
       "Browse France’s major wine regions, their history, and their subregions.",

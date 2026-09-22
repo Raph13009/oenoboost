@@ -13,12 +13,13 @@ import type { AopMapGrape } from "@/features/vignoble/actions/get-aop-map-info";
 
 export type AopPanelInfo = {
   id: number;
-  slug: string | null;
   name: string;
   area_hectares: number | null;
   is_grand_cru: boolean;
   region_slug: string | null;
   subregion_slug: string | null;
+  fiche_slug: string | null;
+  dgc_slug: string | null;
   grapes: AopMapGrape[];
 };
 
@@ -67,14 +68,12 @@ export function AopDetailPanel({
   const accessoryGrapes = aop.grapes.filter((g) => !g.is_primary);
   const hasGrapeChips = mainGrapes.length > 0 || accessoryGrapes.length > 0;
 
-  // `from=map` marks the link as an AOP-detail link so the route renders the
-  // fiche even when the AOP shares its slug with a subregion; `subregion=`
-  // additionally gives the detail page its back-to-map context.
   const detailHref =
-    aop.region_slug && aop.slug
-      ? buildAopDetailHref(aop.region_slug, aop.slug, {
+    aop.region_slug && aop.fiche_slug
+      ? buildAopDetailHref(aop.region_slug, aop.fiche_slug, {
           from: "map",
           subregion: aop.subregion_slug ?? undefined,
+          dgc: aop.dgc_slug ?? undefined,
         })
       : null;
 

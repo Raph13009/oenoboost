@@ -8,6 +8,7 @@
 --   apps/cms/docs/DATABASE_SCHEMA.md           → pointer only
 --
 -- Last focused updates:
+--   #22 / #9 — public.aop.is_dgc_parent + public.aop_dgc_link
 --   #5 / #11 / #18 — public.aop_grape_link (main vs accessory grapes)
 --   #24 — public.aop.recognition_year (year-only)
 --   #21 — public.wine_region_history_milestones
@@ -49,6 +50,7 @@ CREATE TABLE public.aop (
   -- Year the appellation was recognized as AOP/AOC (e.g. 1936). NULL if unknown.
   -- Year-only on purpose: do not store invented month/day.
   recognition_year smallint,
+  is_dgc_parent boolean NOT NULL DEFAULT false,
   CONSTRAINT aop_pkey PRIMARY KEY (id),
   CONSTRAINT aop_status_check CHECK (
     (status)::text = ANY (
@@ -112,6 +114,23 @@ CREATE TABLE public.aop_grape_link (
 
 CREATE INDEX aop_grape_link_grape_idx ON public.aop_grape_link (grape_id);
 CREATE INDEX aop_grape_link_aop_primary_idx ON public.aop_grape_link (aop_id, is_primary);
+
+-- Issues #22 / #9: parent AOP ↔ child DGC links (children stay separate map entities).
+-- child_aop_id UNIQUE → a child cannot belong to multiple parents.
+CREATE TABLE public.aop_dgc_link (
+  parent_aop_id integer NOT NULL,
+  child_aop_id integer NOT NULL,
+  explanation_fr text,
+  explanation_en text,
+  sort_order integer NOT NULL DEFAULT 0,
+  CONSTRAINT aop_dgc_link_pkey PRIMARY KEY (parent_aop_id, child_aop_id),
+  CONSTRAINT aop_dgc_link_parent_fkey FOREIGN KEY (parent_aop_id) REFERENCES public.aop(id) ON DELETE CASCADE,
+  CONSTRAINT aop_dgc_link_child_fkey FOREIGN KEY (child_aop_id) REFERENCES public.aop(id) ON DELETE CASCADE,
+  CONSTRAINT aop_dgc_link_no_self CHECK (parent_aop_id <> child_aop_id),
+  CONSTRAINT aop_dgc_link_child_unique UNIQUE (child_aop_id)
+);
+
+CREATE INDEX aop_dgc_link_parent_idx ON public.aop_dgc_link (parent_aop_id, sort_order);
 
 -- Issue #21: ordered history milestones for wine regions (CMS-managed timeline).
 -- Period labels are free text (not typed dates). Parent: public.wine_regions.

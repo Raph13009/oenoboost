@@ -23,6 +23,7 @@ import { useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { AopWineColorBreakdownField } from "@/components/admin/appellations/AopWineColorBreakdownField";
+import { DgcChildSelector } from "@/components/admin/appellations/DgcChildSelector";
 import { GrapeLinkSelector } from "@/components/admin/appellations/GrapeLinkSelector";
 import { CmsRichTextEditor } from "@/components/admin/shared/CmsRichTextEditor";
 import { validateRecognitionYear } from "@/lib/aop-recognition-year";
@@ -50,6 +51,7 @@ type CardState = {
   communes: boolean;
   editorial: boolean;
   flags: boolean;
+  dgc: boolean;
   technical: boolean;
   metadata: boolean;
 };
@@ -64,6 +66,7 @@ const defaultCardState: CardState = {
   communes: true,
   editorial: true,
   flags: true,
+  dgc: true,
   technical: false,
   metadata: false,
 };
@@ -84,6 +87,7 @@ function loadCardState(): CardState {
       communes: parsed.communes ?? defaultCardState.communes,
       editorial: parsed.editorial ?? defaultCardState.editorial,
       flags: parsed.flags ?? defaultCardState.flags,
+      dgc: parsed.dgc ?? defaultCardState.dgc,
       // Always closed when entering the page (even if previously expanded).
       technical: false,
       metadata: false,
@@ -981,6 +985,7 @@ const emptyForm = (): Appellation => ({
   wine_pct_sparkling: null,
   wine_pct_liqueur: null,
   is_premium: false,
+  is_dgc_parent: false,
   status: "draft",
   published_at: null,
   created_at: "",
@@ -1127,6 +1132,7 @@ export function AppellationEditor({
         wine_pct_liqueur: form.wine_pct_liqueur ?? null,
         published_at: form.published_at || null,
         is_premium: !!form.is_premium,
+        is_dgc_parent: !!form.is_dgc_parent,
         status: form.status,
       };
       const codes = communes.map((c) => c.code_insee);
@@ -1537,7 +1543,31 @@ export function AppellationEditor({
               />
               <span>Premium</span>
             </label>
+            <label className="flex items-center gap-2 text-sm text-slate-800">
+              <input
+                type="checkbox"
+                checked={!!form.is_dgc_parent}
+                onChange={(e) => update({ is_dgc_parent: e.target.checked })}
+                className="h-4 w-4 rounded border-slate-300"
+              />
+              <span>AOP parente (DGC)</span>
+            </label>
+            <p className="text-xs text-slate-500">
+              Marque cette AOP comme fiche principale pour des DGC / appellations filles.
+            </p>
           </div>
+        </CollapsibleCard>
+
+        <CollapsibleCard
+          title="DGC / Appellations filles"
+          open={cardState.dgc}
+          onToggle={() => toggleCard("dgc")}
+        >
+          <DgcChildSelector
+            appellationId={isNew ? null : form.id}
+            enabled={!!form.is_dgc_parent}
+            onError={setError}
+          />
         </CollapsibleCard>
 
         <CollapsibleCard

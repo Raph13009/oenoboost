@@ -204,12 +204,13 @@ export function VignobleMap({
       const seq = ++aopFetchSeqRef.current;
       setSelectedAop({
         id: aopId,
-        slug: null,
         name: aopName,
         area_hectares: null,
         is_grand_cru: false,
         region_slug: null,
         subregion_slug: null,
+        fiche_slug: null,
+        dgc_slug: null,
         grapes: [],
       });
       setSelectedAopLoading(true);
@@ -220,12 +221,13 @@ export function VignobleMap({
         if (info) {
           setSelectedAop({
             id: info.id,
-            slug: info.slug,
             name: info.name,
             area_hectares: info.area_hectares,
             is_grand_cru: info.is_grand_cru,
             region_slug: info.region_slug,
             subregion_slug: info.subregion_slug,
+            fiche_slug: info.fiche_slug,
+            dgc_slug: info.dgc_slug,
             grapes: info.grapes,
           });
         }
