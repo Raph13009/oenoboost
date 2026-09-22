@@ -448,6 +448,7 @@ export function VignobleMap({
             region={selectedRegion}
             locale={locale}
             strings={strings}
+            discoverDisabled={subregions.loading || subregionsMode}
             onClose={() => {
               setSheetOpen(false);
               setSelectedRegionId(null);
@@ -465,6 +466,10 @@ export function VignobleMap({
                   camera.fitToFrance();
                 });
               });
+            }}
+            onDiscover={() => {
+              if (!selectedRegion) return;
+              void enterSubregions(selectedRegion);
             }}
           />
         )}
