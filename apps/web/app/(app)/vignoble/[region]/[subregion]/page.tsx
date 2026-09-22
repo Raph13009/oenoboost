@@ -18,6 +18,7 @@ import {
   getRelatedSoilsForAppellation,
   getSoilBySlug,
 } from "@/features/sols/queries/soils.queries";
+import { getRelatedGrapesForAppellation } from "@/features/cepages/queries/grapes.queries";
 
 type Props = {
   params: Promise<{ region: string; subregion: string }>;
@@ -134,6 +135,7 @@ export default async function RegionSubregionOrAopPage({
     ? await isAppellationFavorited(user.id, String(aop.appellation.id))
     : false;
   const relatedSoils = await getRelatedSoilsForAppellation(aop.appellation.id);
+  const relatedGrapes = await getRelatedGrapesForAppellation(aop.appellation.id);
 
   const isFromFavorites = qp.from === "favorites";
   const isFromList = qp.from === "list";
@@ -228,9 +230,16 @@ export default async function RegionSubregionOrAopPage({
           },
         }}
         relatedSoils={relatedSoils}
+        relatedGrapes={relatedGrapes}
         soilLabels={{
           relatedSoils: dict.sols.relatedSoils,
           emptyRelatedSoils: dict.sols.noRelatedSoils,
+        }}
+        grapeLabels={{
+          mainGrapes: dict.vignoble.mainGrapes,
+          accessoryGrapes: dict.vignoble.accessoryGrapes,
+          relatedSoilsPreview: dict.vignoble.relatedSoilsPreview,
+          freePreviewTitle: dict.vignoble.freePreviewTitle,
         }}
         wineColorLabels={{
           title: dict.vignoble.wineColorBreakdownTitle,

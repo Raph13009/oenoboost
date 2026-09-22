@@ -384,6 +384,10 @@ const en: Dictionary = {
     wineColorSparkling: "Sparkling wine",
     wineColorLiqueur: "Fortified / liqueur wine",
     climateTitle: "Climate",
+    mainGrapes: "Main grape varieties",
+    accessoryGrapes: "Accessory grape varieties",
+    relatedSoilsPreview: "Soils",
+    freePreviewTitle: "Preview",
     regionsListTitle: "Wine regions",
     regionsListIntro:
       "Browse France’s major wine regions, their history, and their subregions.",

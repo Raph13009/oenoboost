@@ -23,6 +23,7 @@ import { useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { AopWineColorBreakdownField } from "@/components/admin/appellations/AopWineColorBreakdownField";
+import { GrapeLinkSelector } from "@/components/admin/appellations/GrapeLinkSelector";
 import { CmsRichTextEditor } from "@/components/admin/shared/CmsRichTextEditor";
 import { validateRecognitionYear } from "@/lib/aop-recognition-year";
 import { validateWineColorBreakdown } from "@/lib/aop-wine-color-breakdown";
@@ -44,6 +45,7 @@ type CardState = {
   production: boolean;
   wineColor: boolean;
   soilTypes: boolean;
+  grapes: boolean;
   climate: boolean;
   communes: boolean;
   editorial: boolean;
@@ -57,6 +59,7 @@ const defaultCardState: CardState = {
   production: true,
   wineColor: true,
   soilTypes: true,
+  grapes: true,
   climate: true,
   communes: true,
   editorial: true,
@@ -76,6 +79,7 @@ function loadCardState(): CardState {
       production: parsed.production ?? defaultCardState.production,
       wineColor: parsed.wineColor ?? defaultCardState.wineColor,
       soilTypes: parsed.soilTypes ?? defaultCardState.soilTypes,
+      grapes: parsed.grapes ?? defaultCardState.grapes,
       climate: parsed.climate ?? defaultCardState.climate,
       communes: parsed.communes ?? defaultCardState.communes,
       editorial: parsed.editorial ?? defaultCardState.editorial,
@@ -1375,6 +1379,14 @@ export function AppellationEditor({
           <SoilLinkSelector appellationId={isNew ? null : form.id} onError={setError} />
         </CollapsibleCard>
 
+        <CollapsibleCard
+          title="Cépages"
+          open={cardState.grapes}
+          onToggle={() => toggleCard("grapes")}
+        >
+          <GrapeLinkSelector appellationId={isNew ? null : form.id} onError={setError} />
+        </CollapsibleCard>
+
         <CollapsibleCard title="Climat" open={cardState.climate} onToggle={() => toggleCard("climate")}>
           <div className={fieldSpacing}>
             <p className="text-xs text-slate-500">
@@ -1441,22 +1453,22 @@ export function AppellationEditor({
               />
             </div>
             <div>
-              <label className={labelClass}>Couleurs / cépages (FR)</label>
+              <label className={labelClass}>Notes couleurs (FR)</label>
               <CmsRichTextEditor
                 key={`${form.id || "new"}-colors-grapes-fr`}
                 value={form.colors_grapes_fr ?? ""}
                 onChange={(html) => update({ colors_grapes_fr: html || null })}
-                placeholder="Couleurs et cépages en français…"
+                placeholder="Notes éditoriales sur les couleurs (hors liens cépages structurés)…"
                 minHeightClass="min-h-[5rem]"
               />
             </div>
             <div>
-              <label className={labelClass}>Couleurs / cépages (EN)</label>
+              <label className={labelClass}>Notes couleurs (EN)</label>
               <CmsRichTextEditor
                 key={`${form.id || "new"}-colors-grapes-en`}
                 value={form.colors_grapes_en ?? ""}
                 onChange={(html) => update({ colors_grapes_en: html || null })}
-                placeholder="Wine colors and grape varieties in English…"
+                placeholder="Editorial notes on wine colors (structured grape links are separate)…"
                 minHeightClass="min-h-[5rem]"
               />
             </div>

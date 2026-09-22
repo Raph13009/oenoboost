@@ -8,6 +8,7 @@
 --   apps/cms/docs/DATABASE_SCHEMA.md           → pointer only
 --
 -- Last focused updates:
+--   #5 / #11 / #18 — public.aop_grape_link (main vs accessory grapes)
 --   #24 — public.aop.recognition_year (year-only)
 --   #21 — public.wine_region_history_milestones
 
@@ -96,6 +97,21 @@ CREATE TABLE public.aop (
 );
 
 CREATE UNIQUE INDEX aop_slug_idx ON public.aop (slug);
+
+-- Issues #18 / #11 / #5: structured AOP ↔ grape links.
+-- is_primary = true  → main/classic (free preview + full fiche)
+-- is_primary = false → accessory (full fiche only)
+CREATE TABLE public.aop_grape_link (
+  aop_id integer NOT NULL,
+  grape_id uuid NOT NULL,
+  is_primary boolean NOT NULL DEFAULT true,
+  CONSTRAINT aop_grape_link_pkey PRIMARY KEY (aop_id, grape_id),
+  CONSTRAINT aop_grape_link_aop_id_fkey FOREIGN KEY (aop_id) REFERENCES public.aop(id) ON DELETE CASCADE,
+  CONSTRAINT aop_grape_link_grape_id_fkey FOREIGN KEY (grape_id) REFERENCES public.grapes(id) ON DELETE CASCADE
+);
+
+CREATE INDEX aop_grape_link_grape_idx ON public.aop_grape_link (grape_id);
+CREATE INDEX aop_grape_link_aop_primary_idx ON public.aop_grape_link (aop_id, is_primary);
 
 -- Issue #21: ordered history milestones for wine regions (CMS-managed timeline).
 -- Period labels are free text (not typed dates). Parent: public.wine_regions.

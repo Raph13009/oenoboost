@@ -383,6 +383,10 @@ const fr = {
     wineColorSparkling: "Vin effervescent",
     wineColorLiqueur: "Vin liquoreux",
     climateTitle: "Climat",
+    mainGrapes: "Cépages principaux",
+    accessoryGrapes: "Cépages accessoires",
+    relatedSoilsPreview: "Sols",
+    freePreviewTitle: "Aperçu",
     regionsListTitle: "Régions viticoles",
     regionsListIntro:
       "Parcourez les grandes régions viticoles françaises, leur histoire et leurs sous-régions.",

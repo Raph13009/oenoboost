@@ -72,7 +72,21 @@ export type AppellationLinkedSoilType = {
   slug: string;
 };
 
+export type AppellationLinkedGrape = {
+  id: string;
+  name_fr: string;
+  slug: string;
+  /** true = cépage principal / classique ; false = accessoire */
+  is_primary: boolean;
+};
+
 type LinkedSoilRow = {
+  id: string;
+  name_fr: string;
+  slug: string;
+};
+
+type LinkedGrapeRow = {
   id: string;
   name_fr: string;
   slug: string;
@@ -778,6 +792,135 @@ export async function setAppellationSoilLinks(
     if (insError) return { error: insError.message };
   }
 
+  revalidatePath("/admin/appellations");
+  return {};
+}
+
+export async function getAppellationGrapeLinkItems(
+  appellationId: string
+): Promise<AppellationLinkedGrape[]> {
+  const aopId = toNumberId(appellationId);
+  if (aopId === null) return [];
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("aop_grape_link")
+    .select(
+      `
+      is_primary,
+      grape_id,
+      grapes!grape_id(
+        id,
+        name_fr,
+        slug
+      )
+    `
+    )
+    .eq("aop_id", aopId);
+  if (error) throw new Error(error.message);
+
+  const results = (data ?? [])
+    .map((row) => {
+      const grape = getFirstRelation(
+        (row as { grapes: LinkedGrapeRow | LinkedGrapeRow[] | null }).grapes
+      );
+      if (!grape?.id || !grape.name_fr || !grape.slug) return null;
+      return {
+        id: grape.id,
+        name_fr: grape.name_fr,
+        slug: grape.slug,
+        is_primary: Boolean((row as { is_primary: boolean }).is_primary),
+      };
+    })
+    .filter((row): row is AppellationLinkedGrape => row !== null);
+
+  return results.sort((a, b) => {
+    if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
+    return a.name_fr.localeCompare(b.name_fr, "fr", { sensitivity: "base" });
+  });
+}
+
+export async function searchGrapesForAppellationLinks(
+  query: string
+): Promise<Omit<AppellationLinkedGrape, "is_primary">[]> {
+  const supabase = getSupabaseAdmin();
+  const trimmed = query.trim();
+
+  let request = supabase
+    .from("grapes")
+    .select("id,name_fr,slug")
+    .is("deleted_at", null)
+    .order("name_fr", { ascending: true })
+    .limit(12);
+
+  if (trimmed) {
+    const escaped = trimmed.replaceAll(",", " ");
+    request = request.or(
+      `name_fr.ilike.%${escaped}%,name_en.ilike.%${escaped}%,slug.ilike.%${escaped}%`
+    );
+  }
+
+  const { data, error } = await request;
+  if (error) throw new Error(error.message);
+
+  return ((data ?? []) as LinkedGrapeRow[]).map((row) => ({
+    id: row.id,
+    name_fr: row.name_fr,
+    slug: row.slug,
+  }));
+}
+
+export async function addAppellationGrapeLink(
+  appellationId: string,
+  grapeId: string,
+  isPrimary = true
+): Promise<{ error?: string }> {
+  const aopId = toNumberId(appellationId);
+  if (aopId === null) return { error: "Identifiant AOP invalide." };
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase.from("aop_grape_link").upsert(
+    {
+      aop_id: aopId,
+      grape_id: grapeId,
+      is_primary: isPrimary,
+    },
+    { onConflict: "aop_id,grape_id" }
+  );
+  if (error) return { error: error.message };
+  revalidatePath("/admin/appellations");
+  return {};
+}
+
+export async function setAppellationGrapeLinkRole(
+  appellationId: string,
+  grapeId: string,
+  isPrimary: boolean
+): Promise<{ error?: string }> {
+  const aopId = toNumberId(appellationId);
+  if (aopId === null) return { error: "Identifiant AOP invalide." };
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase
+    .from("aop_grape_link")
+    .update({ is_primary: isPrimary })
+    .eq("aop_id", aopId)
+    .eq("grape_id", grapeId);
+  if (error) return { error: error.message };
+  revalidatePath("/admin/appellations");
+  return {};
+}
+
+export async function removeAppellationGrapeLink(
+  appellationId: string,
+  grapeId: string
+): Promise<{ error?: string }> {
+  const aopId = toNumberId(appellationId);
+  if (aopId === null) return { error: "Identifiant AOP invalide." };
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase
+    .from("aop_grape_link")
+    .delete()
+    .eq("aop_id", aopId)
+    .eq("grape_id", grapeId);
+  if (error) return { error: error.message };
   revalidatePath("/admin/appellations");
   return {};
 }
