@@ -2,7 +2,14 @@
 -- Not a bootstrap / migration script. Source of truth for incremental DDL:
 --   apps/web/supabase/migrations/
 -- Keep this file in sync when the shared Supabase schema changes.
--- Last focused update: issue #21 — public.wine_region_history_milestones.
+--
+-- Policy / pointers (issue #25): docs/DATABASE_SCHEMA.md
+--   apps/web/.cursor/rules/DATABASE_SCHEMA.md  → pointer only
+--   apps/cms/docs/DATABASE_SCHEMA.md           → pointer only
+--
+-- Last focused updates:
+--   #24 — public.aop.recognition_year (year-only)
+--   #21 — public.wine_region_history_milestones
 
 -- WARNING: Table order and constraints may not be valid for execution.
 -- Legacy uuid `public.appellations` still exists as historical backup; the
@@ -84,7 +91,7 @@ CREATE TABLE public.aop (
       + COALESCE(wine_pct_white, 0)
       + COALESCE(wine_pct_sparkling, 0)
       + COALESCE(wine_pct_liqueur, 0)
-    ) = 100
+    ) <= 100
   )
 );
 

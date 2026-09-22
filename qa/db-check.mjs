@@ -66,6 +66,31 @@ function checkMigrations() {
   } else {
     ok("Canonical schema reference present (docs/DATABASE_SCHEMA.sql)");
   }
+
+  const schemaPolicy = path.join(root, "docs/DATABASE_SCHEMA.md");
+  if (!fs.existsSync(schemaPolicy)) {
+    fail("Missing docs/DATABASE_SCHEMA.md policy (issue #25)");
+  } else {
+    ok("Schema sync policy present (docs/DATABASE_SCHEMA.md)");
+  }
+
+  const webPointer = path.join(root, "apps/web/.cursor/rules/DATABASE_SCHEMA.md");
+  const cmsPointer = path.join(root, "apps/cms/docs/DATABASE_SCHEMA.md");
+  for (const [label, pointerPath] of [
+    ["apps/web", webPointer],
+    ["apps/cms", cmsPointer],
+  ]) {
+    if (!fs.existsSync(pointerPath)) {
+      fail(`Missing ${label} schema pointer: ${pointerPath}`);
+      continue;
+    }
+    const text = fs.readFileSync(pointerPath, "utf8");
+    if (!text.includes("docs/DATABASE_SCHEMA.sql")) {
+      fail(`${label} schema pointer does not reference docs/DATABASE_SCHEMA.sql`);
+    } else {
+      ok(`${label} schema pointer references canonical file`);
+    }
+  }
 }
 
 function isLikelyProduction(url) {

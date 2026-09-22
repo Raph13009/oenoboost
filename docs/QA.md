@@ -72,7 +72,8 @@ Playwright config: `playwright.config.ts`
 
 - Migrations live in `apps/web/supabase/migrations/` (incremental; not a full bootstrap from empty).
 - `qa:db` validates migration ordering + optional **read-only** live probes.
-- Canonical schema reference: `docs/DATABASE_SCHEMA.sql` (keep in sync when schema changes).
+- Canonical schema reference: `docs/DATABASE_SCHEMA.sql` (keep in sync when schema changes; see `docs/DATABASE_SCHEMA.md` / issue #25).
+- App/CMS schema files are pointers only — do not let package-local dumps diverge.
 - No destructive automated QA against production.
 
 ## Future tests (fix until Issues ship)
