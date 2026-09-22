@@ -9,17 +9,17 @@ import type {
   VignobleMapStrings,
 } from "@/components/map/types";
 import { buildAopDetailHref } from "@/features/vignoble/lib/aop-slug";
+import type { AopMapGrape } from "@/features/vignoble/actions/get-aop-map-info";
 
 export type AopPanelInfo = {
   id: number;
   slug: string | null;
   name: string;
   area_hectares: number | null;
-  colors_grapes_fr: string | null;
-  colors_grapes_en: string | null;
   is_grand_cru: boolean;
   region_slug: string | null;
   subregion_slug: string | null;
+  grapes: AopMapGrape[];
 };
 
 type AopDetailPanelProps = {
@@ -30,6 +30,32 @@ type AopDetailPanelProps = {
   onBack: () => void;
 };
 
+function GrapeChips({
+  title,
+  grapes,
+}: {
+  title: string;
+  grapes: AopMapGrape[];
+}) {
+  if (grapes.length === 0) return null;
+  return (
+    <div className="mt-3">
+      <div className="text-xs text-muted-foreground">{title}</div>
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
+        {grapes.map((grape) => (
+          <Link
+            key={grape.id}
+            href={`/cepages/${grape.slug}`}
+            className="inline-flex items-center rounded-full border border-border bg-background px-2.5 py-1 text-xs transition-colors hover:border-wine/20 hover:bg-accent hover:text-wine"
+          >
+            {grape.name_fr}
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function AopDetailPanel({
   aop,
   loading,
@@ -37,7 +63,10 @@ export function AopDetailPanel({
   strings,
   onBack,
 }: AopDetailPanelProps) {
-  const grapes = locale === "en" ? aop.colors_grapes_en : aop.colors_grapes_fr;
+  const mainGrapes = aop.grapes.filter((g) => g.is_primary);
+  const accessoryGrapes = aop.grapes.filter((g) => !g.is_primary);
+  const hasGrapeChips = mainGrapes.length > 0 || accessoryGrapes.length > 0;
+
   // `from=map` marks the link as an AOP-detail link so the route renders the
   // fiche even when the AOP shares its slug with a subregion; `subregion=`
   // additionally gives the detail page its back-to-map context.
@@ -78,12 +107,34 @@ export function AopDetailPanel({
             : new Intl.NumberFormat(locale).format(aop.area_hectares)}
         </div>
 
-        <div className="mt-3 text-xs text-muted-foreground">
-          {strings.grapesLabel}
-        </div>
-        <div className="text-sm whitespace-pre-line">
-          {grapes ? grapes : loading ? strings.loading : strings.na}
-        </div>
+        {loading && !hasGrapeChips ? (
+          <>
+            <div className="mt-3 text-xs text-muted-foreground">
+              {strings.grapesLabel}
+            </div>
+            <div className="mt-1 text-sm text-muted-foreground">
+              {strings.loading}
+            </div>
+          </>
+        ) : hasGrapeChips ? (
+          <>
+            <GrapeChips
+              title={strings.mainGrapesLabel ?? strings.grapesLabel}
+              grapes={mainGrapes}
+            />
+            <GrapeChips
+              title={strings.accessoryGrapesLabel ?? strings.grapesLabel}
+              grapes={accessoryGrapes}
+            />
+          </>
+        ) : (
+          <>
+            <div className="mt-3 text-xs text-muted-foreground">
+              {strings.grapesLabel}
+            </div>
+            <div className="mt-1 text-sm text-muted-foreground">{strings.na}</div>
+          </>
+        )}
 
         {detailHref ? (
           <div className="mt-4">

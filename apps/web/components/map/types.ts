@@ -32,6 +32,8 @@ export type VignobleMapStrings = {
   hectaresLabel: string;
   totalProductionLabel: string;
   grapesLabel: string;
+  mainGrapesLabel?: string;
+  accessoryGrapesLabel?: string;
   historyTimelineTitle: string;
   historyTimelineHint: string;
   footerInfoTab: string;

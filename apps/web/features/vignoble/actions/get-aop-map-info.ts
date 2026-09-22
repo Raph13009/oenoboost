@@ -1,17 +1,23 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getRelatedGrapesForAppellation } from "@/features/cepages/queries/grapes.queries";
+import type { RelatedGrape } from "@/features/cepages/types";
+
+export type AopMapGrape = Pick<
+  RelatedGrape,
+  "id" | "slug" | "name_fr" | "is_primary"
+>;
 
 export type AopMapInfo = {
   id: number;
   slug: string;
   name: string;
   area_hectares: number | null;
-  colors_grapes_fr: string | null;
-  colors_grapes_en: string | null;
   is_grand_cru: boolean;
   region_slug: string | null;
   subregion_slug: string | null;
+  grapes: AopMapGrape[];
 };
 
 type SubregionEmbed = {
@@ -36,9 +42,7 @@ export async function getAopMapInfo(aopId: number): Promise<AopMapInfo | null> {
 
   const { data: aop, error: aopError } = await supabase
     .from("aop")
-    .select(
-      "id, slug, name, area_hectares, colors_grapes_fr, colors_grapes_en, is_grand_cru",
-    )
+    .select("id, slug, name, area_hectares, is_grand_cru")
     .eq("id", aopId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -66,15 +70,22 @@ export async function getAopMapInfo(aopId: number): Promise<AopMapInfo | null> {
   const regionRaw = sub?.region ?? null;
   const region = Array.isArray(regionRaw) ? regionRaw[0] ?? null : regionRaw;
 
+  const relatedGrapes = await getRelatedGrapesForAppellation(aopId);
+  const grapes: AopMapGrape[] = relatedGrapes.map((g) => ({
+    id: g.id,
+    slug: g.slug,
+    name_fr: g.name_fr,
+    is_primary: g.is_primary,
+  }));
+
   return {
     id: aop.id as number,
     slug: aop.slug as string,
     name: aop.name as string,
     area_hectares: (aop.area_hectares ?? null) as number | null,
-    colors_grapes_fr: (aop.colors_grapes_fr ?? null) as string | null,
-    colors_grapes_en: (aop.colors_grapes_en ?? null) as string | null,
     is_grand_cru: Boolean(aop.is_grand_cru),
     region_slug: region?.slug ?? null,
     subregion_slug: sub?.slug ?? null,
+    grapes,
   };
 }

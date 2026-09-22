@@ -56,6 +56,8 @@ export default async function VignoblePage({
             hectaresLabel: dict.vignoble.hectares,
             totalProductionLabel: dict.vignoble.totalProduction,
             grapesLabel: dict.vignoble.mapGrapesLabel,
+            mainGrapesLabel: dict.vignoble.mainGrapes,
+            accessoryGrapesLabel: dict.vignoble.accessoryGrapes,
             historyTimelineTitle: dict.vignoble.historyTimelineTitle,
             historyTimelineHint: dict.vignoble.historyTimelineHint,
             footerInfoTab: dict.vignoble.footerInfoTab,

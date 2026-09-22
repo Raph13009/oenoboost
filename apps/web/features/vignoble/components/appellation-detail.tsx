@@ -87,7 +87,6 @@ export function AppellationDetail({
   const name = appellation.name;
   const wineColorBreakdown = getWineColorBreakdown(appellation);
   const history = getContent(appellation, "history", locale);
-  const colorsGrapes = getContent(appellation, "colors_grapes", locale);
   const soils = getContent(appellation, "soils_description", locale);
   const climate = getContent(appellation, "climate", locale).trim();
   const showClimate = climate.length > 0;
@@ -121,7 +120,9 @@ export function AppellationDetail({
   const hasPreviewStats = hasArea || hasProduction || hasYear;
   const showPreviewPie = Boolean(wineColorBreakdown && wineColorLabels);
   const showPreviewSoils = relatedSoils.length > 0;
-  const showPreviewGrapes = mainGrapes.length > 0;
+  const showPreviewMainGrapes = mainGrapes.length > 0;
+  const showPreviewAccessoryGrapes = accessoryGrapes.length > 0;
+  const showPreviewGrapes = showPreviewMainGrapes || showPreviewAccessoryGrapes;
   const showFreePreview =
     locked &&
     (showPreviewPie || hasPreviewStats || showPreviewSoils || showPreviewGrapes);
@@ -221,7 +222,7 @@ export function AppellationDetail({
           </ChipRow>
         )}
 
-        {showPreviewGrapes && (
+        {showPreviewMainGrapes && (
           <ChipRow
             title={
               grapeLabels?.mainGrapes ??
@@ -229,6 +230,25 @@ export function AppellationDetail({
             }
           >
             {mainGrapes.map((grape) => (
+              <ChipLink
+                key={grape.id}
+                href={`/cepages/${grape.slug}`}
+                label={grape.name_fr}
+              />
+            ))}
+          </ChipRow>
+        )}
+
+        {showPreviewAccessoryGrapes && (
+          <ChipRow
+            title={
+              grapeLabels?.accessoryGrapes ??
+              (locale === "fr"
+                ? "Cépages accessoires"
+                : "Accessory grape varieties")
+            }
+          >
+            {accessoryGrapes.map((grape) => (
               <ChipLink
                 key={grape.id}
                 href={`/cepages/${grape.slug}`}
@@ -302,7 +322,7 @@ export function AppellationDetail({
 
       <section className="rounded-xl border border-border bg-card p-4 md:p-5">
         <h2 className="font-heading text-xl font-semibold">
-          {locale === "fr" ? "Couleurs & Cépages" : "Colors & Grapes"}
+          {locale === "fr" ? "Cépages" : "Grape varieties"}
         </h2>
         <div className="mt-4 flex flex-col gap-4">
           {mainGrapes.length > 0 && (
@@ -341,17 +361,9 @@ export function AppellationDetail({
               ))}
             </ChipRow>
           )}
-          {colorsGrapes.trim().length > 0 && (
-            <RichText
-              value={colorsGrapes}
-              className="leading-relaxed text-foreground/85"
-            />
+          {mainGrapes.length === 0 && accessoryGrapes.length === 0 && (
+            <p className="text-sm text-muted-foreground">{na}</p>
           )}
-          {mainGrapes.length === 0 &&
-            accessoryGrapes.length === 0 &&
-            colorsGrapes.trim().length === 0 && (
-              <p className="text-sm text-muted-foreground">{na}</p>
-            )}
         </div>
       </section>
 
