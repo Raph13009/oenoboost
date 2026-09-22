@@ -25,6 +25,7 @@ type MilestoneCardProps = {
   milestone: WineRegionHistoryMilestone;
   draggedId: string | null;
   saving: boolean;
+  saved: boolean;
   deleting: boolean;
   onChange: (id: string, updates: Partial<WineRegionHistoryMilestone>) => void;
   onSave: (id: string) => void;
@@ -38,6 +39,7 @@ function MilestoneCard({
   milestone,
   draggedId,
   saving,
+  saved,
   deleting,
   onChange,
   onSave,
@@ -52,17 +54,15 @@ function MilestoneCard({
 
   return (
     <section
-      draggable
-      onDragStart={(event) => {
-        event.dataTransfer.effectAllowed = "move";
-        onDragStart(milestone.id);
-      }}
       onDragOver={(event) => {
         event.preventDefault();
         event.dataTransfer.dropEffect = "move";
         onDragOver(milestone.id);
       }}
-      onDragEnd={onDragEnd}
+      onDrop={(event) => {
+        event.preventDefault();
+        onDragEnd();
+      }}
       className={`rounded-lg border border-slate-200 bg-slate-50/50 shadow-sm ${
         draggedId === milestone.id ? "opacity-60" : ""
       }`}
@@ -85,7 +85,13 @@ function MilestoneCard({
           </span>
         </button>
         <span
-          className="flex h-8 w-8 shrink-0 cursor-grab items-center justify-center rounded text-slate-400 hover:bg-slate-200 hover:text-slate-600"
+          draggable
+          onDragStart={(event) => {
+            event.dataTransfer.effectAllowed = "move";
+            onDragStart(milestone.id);
+          }}
+          onDragEnd={onDragEnd}
+          className="flex h-8 w-8 shrink-0 cursor-grab items-center justify-center rounded text-slate-400 hover:bg-slate-200 hover:text-slate-600 active:cursor-grabbing"
           title="Réordonner"
         >
           <GripVertical className="h-4 w-4" />
@@ -171,9 +177,13 @@ function MilestoneCard({
                 type="button"
                 onClick={() => onSave(milestone.id)}
                 disabled={saving}
-                className="rounded bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+                className={`rounded px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${
+                  saved
+                    ? "bg-emerald-600 text-white"
+                    : "bg-slate-900 text-white hover:bg-slate-800"
+                }`}
               >
-                {saving ? "Enregistrement…" : "Enregistrer le jalon"}
+                {saving ? "Enregistrement…" : saved ? "Enregistré ✓" : "Enregistrer le jalon"}
               </button>
             </div>
           </div>
@@ -188,6 +198,7 @@ export function RegionHistorySection({ regionId, onError }: Props) {
   const [loading, setLoading] = useState(false);
   const [adding, setAdding] = useState(false);
   const [savingIds, setSavingIds] = useState<string[]>([]);
+  const [savedIds, setSavedIds] = useState<string[]>([]);
   const [deletingIds, setDeletingIds] = useState<string[]>([]);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const milestonesRef = useRef(milestones);
@@ -205,7 +216,7 @@ export function RegionHistorySection({ regionId, onError }: Props) {
         if (!cancelled) setMilestones(rows);
       })
       .catch((err: Error) => {
-        if (!cancelled) onError(err.message);
+        if (!cancelled) onError(err.message || "Impossible de charger l'historique.");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -216,6 +227,7 @@ export function RegionHistorySection({ regionId, onError }: Props) {
   }, [regionId, onError]);
 
   const handleChange = useCallback((id: string, updates: Partial<WineRegionHistoryMilestone>) => {
+    setSavedIds((current) => current.filter((item) => item !== id));
     setMilestones((current) =>
       current.map((item) => (item.id === id ? { ...item, ...updates } : item))
     );
@@ -233,6 +245,13 @@ export function RegionHistorySection({ regionId, onError }: Props) {
       }
       setMilestones((current) =>
         [...current, res.milestone!].sort((a, b) => a.milestone_order - b.milestone_order)
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Erreur réseau";
+      onError(
+        /fetch|network|Failed/i.test(message)
+          ? "Serveur CMS injoignable. Vérifiez que le CMS tourne (port 3001), puis réessayez."
+          : message
       );
     } finally {
       setAdding(false);
@@ -257,7 +276,21 @@ export function RegionHistorySection({ regionId, onError }: Props) {
         detail_en: milestone.detail_en,
         icon_url: milestone.icon_url,
       });
-      if (res.error) onError(res.error);
+      if (res.error) {
+        onError(res.error);
+        return;
+      }
+      setSavedIds((current) => [...current.filter((item) => item !== id), id]);
+      window.setTimeout(() => {
+        setSavedIds((current) => current.filter((item) => item !== id));
+      }, 1500);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Erreur réseau";
+      onError(
+        /fetch|network|Failed/i.test(message)
+          ? "Serveur CMS injoignable. Vérifiez que le CMS tourne (port 3001), puis réessayez."
+          : message
+      );
     } finally {
       setSavingIds((current) => current.filter((item) => item !== id));
     }
@@ -365,6 +398,7 @@ export function RegionHistorySection({ regionId, onError }: Props) {
               milestone={milestone}
               draggedId={draggedId}
               saving={savingIds.includes(milestone.id)}
+              saved={savedIds.includes(milestone.id)}
               deleting={deletingIds.includes(milestone.id)}
               onChange={handleChange}
               onSave={handleSave}

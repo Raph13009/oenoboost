@@ -9,6 +9,7 @@ export type VignobleMapRegion = {
   department_count: number | null;
   area_hectares: number | null;
   total_production_hl: number | null;
+  main_grapes: string | null;
 };
 
 export type SubregionLegendItem = {
@@ -22,7 +23,6 @@ export type SubregionLegendItem = {
 
 export type VignobleMapStrings = {
   discover: string;
-  viewRegionPage: string;
   backToRegions: string;
   backToRegion: string;
   subregionsLayer: string;
@@ -32,6 +32,11 @@ export type VignobleMapStrings = {
   hectaresLabel: string;
   totalProductionLabel: string;
   grapesLabel: string;
+  historyTimelineTitle: string;
+  historyTimelineHint: string;
+  footerInfoTab: string;
+  footerHistoryTab: string;
+  footerPanelToggleAria: string;
   openAopDetail: string;
   loading: string;
   na: string;

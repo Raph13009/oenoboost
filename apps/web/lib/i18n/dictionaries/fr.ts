@@ -391,6 +391,9 @@ const fr = {
     backToRegionsList: "Retour aux régions",
     openOnMap: "Voir sur la carte",
     viewRegionPage: "Voir la fiche",
+    footerInfoTab: "Infos",
+    footerHistoryTab: "Histoire",
+    footerPanelToggleAria: "Afficher les infos ou l'histoire de la région",
   },
   home: {
     subtitle:

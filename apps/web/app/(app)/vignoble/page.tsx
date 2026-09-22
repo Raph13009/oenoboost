@@ -32,6 +32,7 @@ export default async function VignoblePage({
       department_count: r.department_count,
       area_hectares: r.area_hectares,
       total_production_hl: r.total_production_hl,
+      main_grapes: locale === "en" ? r.main_grapes_en : r.main_grapes_fr,
     }));
 
   return (
@@ -47,7 +48,6 @@ export default async function VignoblePage({
           initialSubregionSlug={qp.subregion}
           strings={{
             discover: dict.vignoble.discover,
-            viewRegionPage: dict.vignoble.viewRegionPage,
             backToRegions: dict.vignoble.backToRegions,
             backToRegion: dict.vignoble.backToRegion,
             subregionsLayer: dict.vignoble.subregionsLayer,
@@ -56,6 +56,11 @@ export default async function VignoblePage({
             hectaresLabel: dict.vignoble.hectares,
             totalProductionLabel: dict.vignoble.totalProduction,
             grapesLabel: dict.vignoble.mapGrapesLabel,
+            historyTimelineTitle: dict.vignoble.historyTimelineTitle,
+            historyTimelineHint: dict.vignoble.historyTimelineHint,
+            footerInfoTab: dict.vignoble.footerInfoTab,
+            footerHistoryTab: dict.vignoble.footerHistoryTab,
+            footerPanelToggleAria: dict.vignoble.footerPanelToggleAria,
             openAopDetail: dict.vignoble.mapOpenAopDetail,
             loading: dict.common.loading,
             closeLabel: dict.common.close,

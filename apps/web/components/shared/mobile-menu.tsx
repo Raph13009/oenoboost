@@ -38,7 +38,6 @@ export function MobileMenu({ open, onOpenChange, user }: MobileMenuProps) {
   const { locale } = useLocale();
   const dict = locale === "en" ? enDict : frDict;
   const isAopRoute = pathname.startsWith("/vignoble/aop");
-  const isRegionsRoute = pathname.startsWith("/vignoble/regions");
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -53,7 +52,7 @@ export function MobileMenu({ open, onOpenChange, user }: MobileMenuProps) {
           {NAV_ITEMS.map(({ key, href }) => {
             const isActive =
               href === "/vignoble"
-                ? pathname.startsWith(href) && !isAopRoute && !isRegionsRoute
+                ? pathname.startsWith(href) && !isAopRoute
                 : pathname.startsWith(href);
             return (
               <Link
@@ -70,17 +69,6 @@ export function MobileMenu({ open, onOpenChange, user }: MobileMenuProps) {
               </Link>
             );
           })}
-          <Link
-            href="/vignoble/regions"
-            onClick={() => onOpenChange(false)}
-            className={`rounded-lg px-4 py-3 text-sm font-medium transition-colors ${
-              isRegionsRoute
-                ? "bg-accent text-wine"
-                : "text-foreground hover:bg-accent hover:text-wine"
-            }`}
-          >
-            {dict.vignoble.regions}
-          </Link>
           <Link
             href="/vignoble/aop"
             onClick={() => onOpenChange(false)}

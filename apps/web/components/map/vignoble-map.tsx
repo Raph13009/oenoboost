@@ -155,6 +155,9 @@ export function VignobleMap({
     null,
   );
   const aopRef = useRef<ReturnType<typeof useAopLayer> | null>(null);
+  const enterSubregionsRef = useRef<
+    ((region: VignobleMapRegion, focusSubregionSlug?: string) => Promise<void>) | null
+  >(null);
 
   useRegionLayer(map, {
     geojson: regionGeojson,
@@ -164,10 +167,20 @@ export function VignobleMap({
       (slug: string) => {
         const region = regionBySlug.get(slug);
         if (!region) return;
+        // Second click on the already-selected region drills into subregions
+        // (replaces the former Discover button).
+        if (
+          sheetOpen &&
+          selectedRegionId === region.region_id &&
+          !subregionsMode
+        ) {
+          void enterSubregionsRef.current?.(region);
+          return;
+        }
         setSelectedRegionId(region.region_id);
         setSheetOpen(true);
       },
-      [regionBySlug],
+      [regionBySlug, sheetOpen, selectedRegionId, subregionsMode],
     ),
   });
 
@@ -301,6 +314,10 @@ export function VignobleMap({
     [subregions, camera, aop],
   );
 
+  useEffect(() => {
+    enterSubregionsRef.current = enterSubregions;
+  }, [enterSubregions]);
+
   const exitSubregions = useCallback(() => {
     subregions.hide();
     aop.hide();
@@ -351,21 +368,30 @@ export function VignobleMap({
     [aop, camera, handleAopClick],
   );
 
-  // Fit camera to a selected region once its sheet has rendered (so we know
-  // how much of the map is visually hidden by the bottom card).
+  // Fit camera to a selected region, and re-fit when the bottom sheet height
+  // changes (e.g. history timeline loads into the footer).
   useEffect(() => {
     if (!map || !sheetOpen || !selectedRegion || subregionsMode) return;
-    const regionId = selectedRegion.region_id;
-    if (lastFittedRegionIdRef.current === regionId) return;
+    const el = cardRef.current;
+    if (!el) return;
 
-    const raf = requestAnimationFrame(() => {
-      const bottomInset = cardRef.current?.getBoundingClientRect().height ?? 0;
+    const fit = () => {
+      const bottomInset = el.getBoundingClientRect().height;
       const bounds = getRegionBounds(selectedRegion);
       if (!bounds) return;
       camera.fitToRegion(bounds, { bottomInset });
-      lastFittedRegionIdRef.current = regionId;
+      lastFittedRegionIdRef.current = selectedRegion.region_id;
+    };
+
+    const raf = requestAnimationFrame(fit);
+    const ro = new ResizeObserver(() => {
+      requestAnimationFrame(fit);
     });
-    return () => cancelAnimationFrame(raf);
+    ro.observe(el);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
   }, [map, sheetOpen, selectedRegion, subregionsMode, camera]);
 
   // Keep the canvas size in sync when the sheet closes.
@@ -422,7 +448,6 @@ export function VignobleMap({
             region={selectedRegion}
             locale={locale}
             strings={strings}
-            discoverDisabled={subregions.loading || subregionsMode}
             onClose={() => {
               setSheetOpen(false);
               setSelectedRegionId(null);
@@ -440,10 +465,6 @@ export function VignobleMap({
                   camera.fitToFrance();
                 });
               });
-            }}
-            onDiscover={() => {
-              if (!selectedRegion) return;
-              void enterSubregions(selectedRegion);
             }}
           />
         )}

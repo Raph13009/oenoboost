@@ -392,6 +392,9 @@ const en: Dictionary = {
     backToRegionsList: "Back to regions",
     openOnMap: "View on map",
     viewRegionPage: "View region page",
+    footerInfoTab: "Info",
+    footerHistoryTab: "History",
+    footerPanelToggleAria: "Show region info or history",
   },
   home: {
     subtitle:
