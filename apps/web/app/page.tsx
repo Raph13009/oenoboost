@@ -230,19 +230,17 @@ export default async function HomePage() {
       </section>
 
       <section className="relative mt-10 flex w-full min-w-0 flex-col gap-4 md:mt-12">
-        <div className="relative flex min-w-0 items-center justify-between gap-3 pr-1">
+        <div className="flex min-w-0 items-center justify-between gap-3">
           <h2 className="min-w-0 font-heading text-[1.55rem] font-semibold tracking-tight text-foreground">
             {quizSectionTitle}
           </h2>
-          <div className="relative shrink-0 sm:translate-x-1 md:translate-x-2">
-            <div className="quiz-daily-bubble-float origin-top-right">
-              <DailyQuestionBubble
-                href="/quiz/daily"
-                isLoggedIn={!!user}
-                title={dict.home.dailyQuestionTitle}
-                authCopy={dailyQuestionAuthCopy}
-              />
-            </div>
+          <div className="quiz-daily-bubble-float shrink-0">
+            <DailyQuestionBubble
+              href="/quiz/daily"
+              isLoggedIn={!!user}
+              title={dict.home.dailyQuestionTitle}
+              authCopy={dailyQuestionAuthCopy}
+            />
           </div>
         </div>
         <ul className="flex w-full min-w-0 list-none flex-col gap-3 p-0">
