@@ -20,11 +20,16 @@ type RegionDetailCardProps = {
   region: VignobleMapRegion | null;
   locale: VignobleMapLocale;
   strings: VignobleMapStrings;
+  discoverDisabled: boolean;
   onClose: () => void;
+  onDiscover: () => void;
 };
 
 export const RegionDetailCard = forwardRef<HTMLDivElement, RegionDetailCardProps>(
-  function RegionDetailCard({ region, locale, strings, onClose }, ref) {
+  function RegionDetailCard(
+    { region, locale, strings, discoverDisabled, onClose, onDiscover },
+    ref,
+  ) {
     const [milestones, setMilestones] = useState<WineRegionHistoryMilestone[]>(
       [],
     );
@@ -166,6 +171,16 @@ export const RegionDetailCard = forwardRef<HTMLDivElement, RegionDetailCardProps
                       )} hl`}
                 </div>
               </div>
+            </div>
+
+            <div className="mt-2 md:mt-4">
+              <Button
+                className="h-11 w-full"
+                disabled={discoverDisabled}
+                onClick={onDiscover}
+              >
+                {strings.discover}
+              </Button>
             </div>
           </div>
         )}

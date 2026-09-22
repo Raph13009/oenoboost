@@ -48,7 +48,6 @@ export default async function VignoblePage({
           initialSubregionSlug={qp.subregion}
           strings={{
             discover: dict.vignoble.discover,
-            viewRegionPage: dict.vignoble.viewRegionPage,
             backToRegions: dict.vignoble.backToRegions,
             backToRegion: dict.vignoble.backToRegion,
             subregionsLayer: dict.vignoble.subregionsLayer,
