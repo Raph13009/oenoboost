@@ -5,6 +5,7 @@ import {
   normalizeGrapeRadarFields,
   validateGrapeRadarFields,
 } from "@/lib/grape-radar";
+import { normalizeRichTextForStorage } from "@/lib/richtext-html";
 import { revalidatePath } from "next/cache";
 
 export type Grape = {
@@ -182,16 +183,16 @@ function formToRow(
       origin_region_en: form.origin_region_en || null,
       origin_latitude: form.origin_latitude ?? null,
       origin_longitude: form.origin_longitude ?? null,
-      history_fr: form.history_fr || null,
-      history_en: form.history_en || null,
-      crossings_fr: form.crossings_fr || null,
-      crossings_en: form.crossings_en || null,
-      production_regions_fr: form.production_regions_fr || null,
-      production_regions_en: form.production_regions_en || null,
-      viticultural_traits_fr: form.viticultural_traits_fr || null,
-      viticultural_traits_en: form.viticultural_traits_en || null,
-      tasting_traits_fr: form.tasting_traits_fr || null,
-      tasting_traits_en: form.tasting_traits_en || null,
+      history_fr: normalizeRichTextForStorage(form.history_fr),
+      history_en: normalizeRichTextForStorage(form.history_en),
+      crossings_fr: normalizeRichTextForStorage(form.crossings_fr),
+      crossings_en: normalizeRichTextForStorage(form.crossings_en),
+      production_regions_fr: normalizeRichTextForStorage(form.production_regions_fr),
+      production_regions_en: normalizeRichTextForStorage(form.production_regions_en),
+      viticultural_traits_fr: normalizeRichTextForStorage(form.viticultural_traits_fr),
+      viticultural_traits_en: normalizeRichTextForStorage(form.viticultural_traits_en),
+      tasting_traits_fr: normalizeRichTextForStorage(form.tasting_traits_fr),
+      tasting_traits_en: normalizeRichTextForStorage(form.tasting_traits_en),
       emblematic_wines_fr: form.emblematic_wines_fr || null,
       emblematic_wines_en: form.emblematic_wines_en || null,
       ...normalizedRadar,

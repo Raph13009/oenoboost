@@ -12,6 +12,7 @@ import {
   useState,
 } from "react";
 import { PremiumGate } from "@/components/shared/premium-gate";
+import { RichText } from "@/components/shared/rich-text";
 import { getContent } from "@/lib/i18n/get-content";
 import type { Locale } from "@/lib/i18n/config";
 import type { VinificationStep } from "../types";
@@ -120,9 +121,10 @@ function StepCard({
   );
 
   const detailBody = (
-    <p className="whitespace-pre-line text-[15px] leading-relaxed text-foreground/85">
-      {detail}
-    </p>
+    <RichText
+      value={detail}
+      className="text-[15px] leading-relaxed text-foreground/85"
+    />
   );
 
   const detailBlock = hasDetail ? (

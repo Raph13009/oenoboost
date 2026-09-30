@@ -14,7 +14,7 @@ import { AopWineColorPieChart } from "./aop-wine-color-pie-chart";
 import type { AppellationFavoriteLabels } from "./appellation-favorite-button";
 import { AppellationFavoriteButton } from "./appellation-favorite-button";
 import { AppellationDgcSection } from "./appellation-dgc-section";
-import { RichText } from "./rich-text";
+import { RichText } from "@/components/shared/rich-text";
 
 type AppellationDetailProps = {
   appellation: Appellation;

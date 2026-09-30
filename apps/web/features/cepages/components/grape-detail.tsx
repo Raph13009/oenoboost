@@ -12,6 +12,7 @@ import { GrapeFavoriteButton } from "./grape-favorite-button";
 import { GrapeGlobeMap } from "./grape-globe-map";
 import { GrapeProfileRadar } from "./grape-profile-radar";
 import { PremiumGate } from "@/components/shared/premium-gate";
+import { RichText } from "@/components/shared/rich-text";
 import { buildAopDetailHref } from "@/features/vignoble/lib/aop-slug";
 
 type GrapeDetailProps = {
@@ -80,7 +81,7 @@ export function GrapeDetail({
     grape.type === "red" ? labels.red : grape.type === "white" ? labels.white : labels.rose;
   const na = "...";
 
-  const textClass = "whitespace-pre-line leading-relaxed text-foreground/85";
+  const bodyClass = "leading-relaxed text-foreground/85";
 
   return (
     <div className="flex flex-col gap-6">
@@ -121,13 +122,13 @@ export function GrapeDetail({
       <PremiumGate isPremium={grape.is_premium} userPlan={userPlan}>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:items-stretch">
         <GrapeDetailSection title={labels.origin} className="md:col-start-1 md:row-start-1">
-          <p className={textClass}>
+          <p className={`whitespace-pre-line ${bodyClass}`}>
             {`${grape.origin_country ?? na}${originRegion ? ` — ${originRegion}` : ""}`}
           </p>
         </GrapeDetailSection>
 
         <GrapeDetailSection title={labels.history} className="md:col-start-1 md:row-start-2">
-          <p className={textClass}>{history || na}</p>
+          <RichText value={history || na} className={bodyClass} />
         </GrapeDetailSection>
 
         <GrapeDetailSection
@@ -147,20 +148,20 @@ export function GrapeDetail({
           title={labels.characteristics}
           className="md:col-start-1 md:row-start-3"
         >
-          <p className={textClass}>{viticultural || na}</p>
+          <RichText value={viticultural || na} className={bodyClass} />
         </GrapeDetailSection>
         <GrapeDetailSection title={labels.tasting} className="md:col-start-2 md:row-start-3">
-          <p className={textClass}>{tasting || na}</p>
+          <RichText value={tasting || na} className={bodyClass} />
         </GrapeDetailSection>
 
         <GrapeDetailSection
           title={labels.productionRegions}
           className="md:col-start-1 md:row-start-4"
         >
-          <p className={textClass}>{production || na}</p>
+          <RichText value={production || na} className={bodyClass} />
         </GrapeDetailSection>
         <GrapeDetailSection title={labels.crossings} className="md:col-start-2 md:row-start-4">
-          <p className={textClass}>{crossings || na}</p>
+          <RichText value={crossings || na} className={bodyClass} />
         </GrapeDetailSection>
 
         <GrapeDetailSection

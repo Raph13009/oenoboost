@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import type { Locale } from "@/lib/i18n/config";
 import { getContent } from "@/lib/i18n/get-content";
+import { RichText } from "@/components/shared/rich-text";
 import { cn } from "@/lib/utils";
 import type { WineRegionHistoryMilestone } from "../types";
 
@@ -150,14 +151,15 @@ export function RegionHistoryTimeline({
             {selectedTitle}
           </h3>
           {detail ? (
-            <p
+            <RichText
+              value={detail}
               className={cn(
-                "mt-1.5 whitespace-pre-wrap leading-relaxed text-foreground/85",
-                compact ? "text-xs md:text-sm line-clamp-4" : "mt-3 text-[15px]",
+                "mt-1.5 leading-relaxed text-foreground/85",
+                compact
+                  ? "text-xs md:text-sm line-clamp-4"
+                  : "mt-3 text-[15px]",
               )}
-            >
-              {detail}
-            </p>
+            />
           ) : null}
         </div>
       )}

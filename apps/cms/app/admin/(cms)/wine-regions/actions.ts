@@ -1,6 +1,7 @@
 "use server";
 
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { normalizeRichTextForStorage } from "@/lib/richtext-html";
 import { revalidatePath } from "next/cache";
 
 export type WineRegion = {
@@ -174,8 +175,8 @@ function milestoneFormToRow(form: WineRegionHistoryMilestoneForm): Record<string
     period_label_en: form.period_label_en || "",
     title_fr: form.title_fr || "",
     title_en: form.title_en || "",
-    detail_fr: form.detail_fr || null,
-    detail_en: form.detail_en || null,
+    detail_fr: normalizeRichTextForStorage(form.detail_fr),
+    detail_en: normalizeRichTextForStorage(form.detail_en),
     icon_url: form.icon_url || null,
     updated_at: new Date().toISOString(),
   };

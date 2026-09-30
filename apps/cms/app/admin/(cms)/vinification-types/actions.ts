@@ -6,6 +6,7 @@ import {
   nextVinificationStepOrder,
   vinificationStepFormToRow,
 } from "@/lib/vinification-steps";
+import { normalizeRichTextForStorage } from "@/lib/richtext-html";
 import { revalidatePath } from "next/cache";
 
 export type VinificationType = {
@@ -170,7 +171,11 @@ export async function updateVinificationStep(
   form: VinificationStepForm
 ): Promise<{ error?: string }> {
   const supabase = getSupabaseAdmin();
-  const row = vinificationStepFormToRow(form);
+  const row = vinificationStepFormToRow({
+    ...form,
+    detail_fr: normalizeRichTextForStorage(form.detail_fr),
+    detail_en: normalizeRichTextForStorage(form.detail_en),
+  });
   const { error } = await supabase.from("vinification_steps").update(row).eq("id", id);
   if (error) return { error: error.message };
   revalidatePath("/admin/vinification-types");

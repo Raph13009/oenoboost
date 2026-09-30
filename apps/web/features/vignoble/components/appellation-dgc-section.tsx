@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@/lib/i18n/config";
 import type { DgcChildSummary } from "../queries/aop-dgc.queries";
-import { RichText } from "./rich-text";
+import { RichText } from "@/components/shared/rich-text";
 
 type Labels = {
   sectionTitle: string;

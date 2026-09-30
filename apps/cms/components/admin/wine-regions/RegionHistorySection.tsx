@@ -10,6 +10,7 @@ import {
   reorderWineRegionHistoryMilestones,
   updateWineRegionHistoryMilestone,
 } from "@/app/admin/(cms)/wine-regions/actions";
+import { CmsRichTextEditor } from "@/components/admin/shared/CmsRichTextEditor";
 
 const labelClass = "block text-[11px] text-slate-500 mb-0.5";
 const inputClass =
@@ -49,8 +50,6 @@ function MilestoneCard({
   onDragEnd,
 }: MilestoneCardProps) {
   const [open, setOpen] = useState(true);
-  const textareaClass =
-    "min-h-[4rem] w-full resize-none rounded border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-200";
 
   return (
     <section
@@ -138,20 +137,22 @@ function MilestoneCard({
           </div>
           <div>
             <label className={labelClass}>Détail (FR)</label>
-            <textarea
+            <CmsRichTextEditor
+              key={`${milestone.id}-detail-fr`}
               value={milestone.detail_fr ?? ""}
-              onChange={(e) => onChange(milestone.id, { detail_fr: e.target.value || null })}
-              className={textareaClass}
-              rows={3}
+              onChange={(html) => onChange(milestone.id, { detail_fr: html || null })}
+              placeholder="Texte détaillé du jalon…"
+              minHeightClass="min-h-[5rem]"
             />
           </div>
           <div>
             <label className={labelClass}>Détail (EN)</label>
-            <textarea
+            <CmsRichTextEditor
+              key={`${milestone.id}-detail-en`}
               value={milestone.detail_en ?? ""}
-              onChange={(e) => onChange(milestone.id, { detail_en: e.target.value || null })}
-              className={textareaClass}
-              rows={3}
+              onChange={(html) => onChange(milestone.id, { detail_en: html || null })}
+              placeholder="Milestone detail…"
+              minHeightClass="min-h-[5rem]"
             />
           </div>
           <div>
