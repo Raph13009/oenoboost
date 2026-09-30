@@ -14,6 +14,8 @@ import { AopWineColorPieChart } from "./aop-wine-color-pie-chart";
 import type { AppellationFavoriteLabels } from "./appellation-favorite-button";
 import { AppellationFavoriteButton } from "./appellation-favorite-button";
 import { AppellationDgcSection } from "./appellation-dgc-section";
+import type { AppellationNoteLabels } from "./appellation-note-section";
+import { AppellationNoteSection } from "./appellation-note-section";
 import { RichText } from "@/components/shared/rich-text";
 
 type AppellationDetailProps = {
@@ -33,6 +35,14 @@ type AppellationDetailProps = {
   relatedGrapes?: RelatedGrape[];
   dgcChildren?: DgcChildSummary[];
   highlightedDgcSlug?: string | null;
+  note?: {
+    initialBody: string;
+    isLoggedIn: boolean;
+    regionSlug: string;
+    aopSlug: string;
+    subregionSlug: string;
+  };
+  noteLabels?: AppellationNoteLabels;
   soilLabels?: {
     relatedSoils: string;
     emptyRelatedSoils: string;
@@ -90,6 +100,8 @@ export function AppellationDetail({
   relatedGrapes = [],
   dgcChildren = [],
   highlightedDgcSlug = null,
+  note,
+  noteLabels,
   soilLabels,
   grapeLabels,
   dgcLabels,
@@ -452,6 +464,18 @@ export function AppellationDetail({
           locale={locale}
           highlightedSlug={highlightedDgcSlug}
           labels={dgcLabels}
+        />
+      )}
+      {note && noteLabels && (
+        <AppellationNoteSection
+          aopId={appellation.id}
+          regionSlug={note.regionSlug}
+          aopSlug={note.aopSlug}
+          subregionSlug={note.subregionSlug}
+          initialBody={note.initialBody}
+          isLoggedIn={note.isLoggedIn}
+          userPlan={userPlan}
+          labels={noteLabels}
         />
       )}
     </div>

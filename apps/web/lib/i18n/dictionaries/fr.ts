@@ -397,6 +397,20 @@ const fr = {
     freePreviewTitle: "Aperçu",
     dgcSectionTitle: "Dénominations géographiques (DGC)",
     dgcEmptyExplanation: "Pas encore d’explication pour cette DGC.",
+    noteTitle: "Mes notes",
+    notePlaceholder: "Ajoutez une note personnelle sur cette AOP…",
+    noteSave: "Enregistrer",
+    noteSavedToast: "Note enregistrée",
+    noteEmptyHint: "Aucune note pour l’instant — écrivez ci-dessus pour en garder une.",
+    noteLockedAuthTitle: "Notes personnelles",
+    noteLockedAuthBody:
+      "Connectez-vous avec un compte Premium pour écrire vos notes sur cette AOP.",
+    noteLockedPremiumTitle: "Notes Premium",
+    noteLockedPremiumBody:
+      "Passez à Premium pour enregistrer vos notes privées sur les fiches AOP.",
+    noteUnlockCta: "Continuer",
+    noteAuthTitle: "Fonctionnalité réservée",
+    noteAuthBody: "Créez un compte pour accéder aux notes personnelles Premium.",
     regionsListTitle: "Régions viticoles",
     regionsListIntro:
       "Parcourez les grandes régions viticoles françaises, leur histoire et leurs sous-régions.",

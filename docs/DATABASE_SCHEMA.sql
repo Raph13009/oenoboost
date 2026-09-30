@@ -8,6 +8,7 @@
 --   apps/cms/docs/DATABASE_SCHEMA.md           → pointer only
 --
 -- Last focused updates:
+--   #10 — public.user_aop_notes (private Premium AOP notes)
 --   #7 / #20 — grapes radar_* (0–8) + public.grape_emblematic_aop_link
 --   #22 / #9 — public.aop.is_dgc_parent + public.aop_dgc_link
 --   #5 / #11 / #18 — public.aop_grape_link (main vs accessory grapes)
@@ -176,6 +177,23 @@ CREATE TABLE public.aop_dgc_link (
 );
 
 CREATE INDEX aop_dgc_link_parent_idx ON public.aop_dgc_link (parent_aop_id, sort_order);
+
+-- Issue #10: private Premium user notes on AOP fiches (one per user + AOP).
+CREATE TABLE public.user_aop_notes (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  aop_id integer NOT NULL,
+  body text NOT NULL DEFAULT '',
+  created_at timestamp without time zone NOT NULL DEFAULT now(),
+  updated_at timestamp without time zone NOT NULL DEFAULT now(),
+  CONSTRAINT user_aop_notes_pkey PRIMARY KEY (id),
+  CONSTRAINT user_aop_notes_user_aop_unique UNIQUE (user_id, aop_id),
+  CONSTRAINT user_aop_notes_user_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE,
+  CONSTRAINT user_aop_notes_aop_fkey FOREIGN KEY (aop_id) REFERENCES public.aop(id) ON DELETE CASCADE
+);
+
+CREATE INDEX user_aop_notes_user_idx ON public.user_aop_notes (user_id);
+CREATE INDEX user_aop_notes_aop_idx ON public.user_aop_notes (aop_id);
 
 -- Issue #21: ordered history milestones for wine regions (CMS-managed timeline).
 -- Period labels are free text (not typed dates). Parent: public.wine_regions.

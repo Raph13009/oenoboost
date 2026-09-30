@@ -113,6 +113,16 @@ export type Favorite = {
   created_at: string;
 };
 
+/** Private Premium note on an AOP fiche (issue #10). */
+export type UserAopNote = {
+  id: string;
+  user_id: string;
+  aop_id: number;
+  body: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Grape = {
   id: string;
   slug: string;

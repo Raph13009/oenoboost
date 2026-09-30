@@ -398,6 +398,20 @@ const en: Dictionary = {
     freePreviewTitle: "Preview",
     dgcSectionTitle: "Geographic denominations (DGC)",
     dgcEmptyExplanation: "No explanation yet for this DGC.",
+    noteTitle: "My notes",
+    notePlaceholder: "Add a personal note about this AOP…",
+    noteSave: "Save",
+    noteSavedToast: "Note saved",
+    noteEmptyHint: "No note yet — write above to keep one.",
+    noteLockedAuthTitle: "Personal notes",
+    noteLockedAuthBody:
+      "Sign in with a Premium account to write notes on this AOP.",
+    noteLockedPremiumTitle: "Premium notes",
+    noteLockedPremiumBody:
+      "Upgrade to Premium to save private notes on AOP pages.",
+    noteUnlockCta: "Continue",
+    noteAuthTitle: "Members only",
+    noteAuthBody: "Create an account to access Premium personal notes.",
     regionsListTitle: "Wine regions",
     regionsListIntro:
       "Browse France’s major wine regions, their history, and their subregions.",

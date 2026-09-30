@@ -26,6 +26,7 @@ import {
   getDgcChildrenForParent,
   getDgcParentForChild,
 } from "@/features/vignoble/queries/aop-dgc.queries";
+import { getUserAopNote } from "@/features/vignoble/queries/aop-notes.queries";
 
 type Props = {
   params: Promise<{ region: string; subregion: string }>;
@@ -160,6 +161,10 @@ export default async function RegionSubregionOrAopPage({
   const relatedSoils = await getRelatedSoilsForAppellation(aop.appellation.id);
   const relatedGrapes = await getRelatedGrapesForAppellation(aop.appellation.id);
   const dgcChildren = await getDgcChildrenForParent(aop.appellation.id);
+  const userNote =
+    user && user.plan === "premium"
+      ? await getUserAopNote(user.id, aop.appellation.id)
+      : null;
 
   const isFromFavorites = qp.from === "favorites";
   const isFromList = qp.from === "list";
@@ -271,6 +276,31 @@ export default async function RegionSubregionOrAopPage({
           sectionTitle: dict.vignoble.dgcSectionTitle,
           areaLabel: dict.vignoble.hectares,
           emptyExplanation: dict.vignoble.dgcEmptyExplanation,
+        }}
+        note={{
+          initialBody: userNote?.body ?? "",
+          isLoggedIn: !!user,
+          regionSlug: aop.region.slug,
+          aopSlug: aop.appellation.slug,
+          subregionSlug: aop.subregion?.slug ?? "",
+        }}
+        noteLabels={{
+          title: dict.vignoble.noteTitle,
+          placeholder: dict.vignoble.notePlaceholder,
+          save: dict.vignoble.noteSave,
+          savedToast: dict.vignoble.noteSavedToast,
+          emptyHint: dict.vignoble.noteEmptyHint,
+          lockedAuthTitle: dict.vignoble.noteLockedAuthTitle,
+          lockedAuthBody: dict.vignoble.noteLockedAuthBody,
+          lockedPremiumTitle: dict.vignoble.noteLockedPremiumTitle,
+          lockedPremiumBody: dict.vignoble.noteLockedPremiumBody,
+          unlockCta: dict.vignoble.noteUnlockCta,
+          authModal: {
+            title: dict.vignoble.noteAuthTitle,
+            body: dict.vignoble.noteAuthBody,
+            login: dict.vignoble.favoriteAuthLogin,
+            register: dict.vignoble.favoriteAuthRegister,
+          },
         }}
         wineColorLabels={{
           title: dict.vignoble.wineColorBreakdownTitle,
