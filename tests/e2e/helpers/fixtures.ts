@@ -95,17 +95,58 @@ export async function loadFixtures(): Promise<QaFixtures> {
   }
 
   if (!fixtures.aopSlug) {
-    const { data } = await supabase
+    // Resolve AOP + owning region together so smoke URLs like
+    // `/vignoble/{region}/{aop}` stay coherent (avoid e.g. alsace/ajaccio).
+    const { data: aopRows } = await supabase
       .from("aop")
-      .select("slug, name, is_premium")
+      .select("id, slug, name, is_premium")
       .is("deleted_at", null)
       .order("name", { ascending: true })
-      .limit(20);
-    const rows = data ?? [];
-    fixtures.aopSlug = rows[0]?.slug ?? null;
-    fixtures.aopName = rows[0]?.name ?? null;
-    fixtures.freeAopSlug = rows.find((r) => r.is_premium === false)?.slug ?? null;
-    fixtures.premiumAopSlug = rows.find((r) => r.is_premium === true)?.slug ?? null;
+      .limit(30);
+
+    for (const aop of aopRows ?? []) {
+      const { data: link } = await supabase
+        .from("aop_subregion_link")
+        .select("subregion_id")
+        .eq("aop_id", aop.id)
+        .not("subregion_id", "is", null)
+        .limit(1)
+        .maybeSingle();
+      if (!link?.subregion_id) continue;
+
+      const { data: sub } = await supabase
+        .from("subregions")
+        .select("slug, region_id")
+        .eq("id", link.subregion_id)
+        .is("deleted_at", null)
+        .maybeSingle();
+      if (!sub?.region_id) continue;
+
+      const { data: region } = await supabase
+        .from("wine_regions")
+        .select("slug, name_fr")
+        .eq("id", sub.region_id)
+        .is("deleted_at", null)
+        .maybeSingle();
+      if (!region?.slug) continue;
+
+      fixtures.aopSlug = aop.slug;
+      fixtures.aopName = aop.name;
+      fixtures.regionSlug = region.slug;
+      fixtures.regionName = region.name_fr;
+      fixtures.subregionSlug = sub.slug;
+      break;
+    }
+
+    const rows = aopRows ?? [];
+    if (!fixtures.aopSlug) {
+      fixtures.aopSlug = rows[0]?.slug ?? null;
+      fixtures.aopName = rows[0]?.name ?? null;
+    }
+    fixtures.freeAopSlug =
+      rows.find((r) => r.is_premium === false)?.slug ?? fixtures.aopSlug;
+    fixtures.premiumAopSlug =
+      rows.find((r) => r.is_premium === true)?.slug ?? null;
   } else {
     const { data } = await supabase
       .from("aop")

@@ -33,7 +33,8 @@ export default defineConfig({
     screenshot: "only-on-failure",
     video: "retain-on-failure",
     actionTimeout: 15_000,
-    navigationTimeout: 45_000,
+    // Dev `next` first compile of heavy fiches (sols, AOP detail) often exceeds 45s.
+    navigationTimeout: 60_000,
   },
   projects: [
     {
