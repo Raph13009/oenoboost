@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "tsx --test lib/richtext-html.test.ts lib/aop-wine-color-breakdown.test.ts lib/aop-slug.test.ts lib/vinification-steps.test.ts \"app/admin/(cms)/appellations/link-sync.test.ts\""
+    "test": "tsx --test lib/richtext-html.test.ts lib/aop-wine-color-breakdown.test.ts lib/aop-slug.test.ts lib/vinification-steps.test.ts lib/aop-recognition-year.test.ts lib/grape-radar.test.ts \"app/admin/(cms)/appellations/link-sync.test.ts\""
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -23,7 +23,6 @@
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "dotenv": "^17.3.1",
-    "isomorphic-dompurify": "^3.4.0",
     "lucide-react": "^0.453.0",
     "mapbox-gl": "^3.20.0",
     "next": "14.2.5",

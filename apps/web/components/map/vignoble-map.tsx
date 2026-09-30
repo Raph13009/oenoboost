@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { getAopMapInfo } from "@/features/vignoble/actions/get-aop-map-info";
+import { getAopSubregionLinks } from "@/features/vignoble/queries/get-aop-subregion-links";
 
 import { useMapCamera } from "./camera/use-map-camera";
 import { normalizeHexColor } from "./geo/color";
@@ -12,6 +13,7 @@ import {
   normalizeToMultiPolygon,
 } from "./geo/geometry";
 import { useBodyScrollLock } from "./hooks/use-body-scroll-lock";
+import { filterAopItemsBySubregion } from "./layers/filter-aop-items-by-subregion";
 import type { AopClickPayload } from "./layers/use-aop-layer";
 import { useAopLayer } from "./layers/use-aop-layer";
 import type { RegionFeatureCollection } from "./layers/use-region-layer";
@@ -25,6 +27,7 @@ import { MapLoadingOverlay } from "./panels/map-loading-overlay";
 import { RegionDetailCard } from "./panels/region-detail-card";
 import { SubregionDetailPanel } from "./panels/subregion-detail-panel";
 import { SubregionLegend } from "./panels/subregion-legend";
+import { AopGrandCruLegend } from "./panels/aop-grand-cru-legend";
 import type {
   VignobleMapLocale,
   VignobleMapRegion,
@@ -155,6 +158,9 @@ export function VignobleMap({
     null,
   );
   const aopRef = useRef<ReturnType<typeof useAopLayer> | null>(null);
+  const enterSubregionsRef = useRef<
+    ((region: VignobleMapRegion, focusSubregionSlug?: string) => Promise<void>) | null
+  >(null);
 
   useRegionLayer(map, {
     geojson: regionGeojson,
@@ -164,10 +170,20 @@ export function VignobleMap({
       (slug: string) => {
         const region = regionBySlug.get(slug);
         if (!region) return;
+        // Second click on the already-selected region drills into subregions
+        // (replaces the former Discover button).
+        if (
+          sheetOpen &&
+          selectedRegionId === region.region_id &&
+          !subregionsMode
+        ) {
+          void enterSubregionsRef.current?.(region);
+          return;
+        }
         setSelectedRegionId(region.region_id);
         setSheetOpen(true);
       },
-      [regionBySlug],
+      [regionBySlug, sheetOpen, selectedRegionId, subregionsMode],
     ),
   });
 
@@ -191,14 +207,15 @@ export function VignobleMap({
       const seq = ++aopFetchSeqRef.current;
       setSelectedAop({
         id: aopId,
-        slug: null,
         name: aopName,
         area_hectares: null,
-        colors_grapes_fr: null,
-        colors_grapes_en: null,
         is_grand_cru: false,
         region_slug: null,
         subregion_slug: null,
+        fiche_slug: null,
+        dgc_slug: null,
+        grapes: [],
+        dgc_children: [],
       });
       setSelectedAopLoading(true);
 
@@ -206,16 +223,29 @@ export function VignobleMap({
         const info = await getAopMapInfo(aopId);
         if (seq !== aopFetchSeqRef.current) return;
         if (info) {
+          // Parent + DGC children: zoom/highlight the whole family footprint.
+          if (info.family_ids.length > 1) {
+            const familyBounds = aopRef.current?.getBoundsForAops(info.family_ids);
+            if (familyBounds) {
+              cameraRef.current?.fitToBounds(familyBounds, {
+                padding: 60,
+                maxZoom: 12,
+              });
+            }
+            aopRef.current?.highlightAop(info.family_ids);
+          }
+
           setSelectedAop({
             id: info.id,
-            slug: info.slug,
             name: info.name,
             area_hectares: info.area_hectares,
-            colors_grapes_fr: info.colors_grapes_fr,
-            colors_grapes_en: info.colors_grapes_en,
             is_grand_cru: info.is_grand_cru,
             region_slug: info.region_slug,
             subregion_slug: info.subregion_slug,
+            fiche_slug: info.fiche_slug,
+            dgc_slug: info.dgc_slug,
+            grapes: info.grapes,
+            dgc_children: info.dgc_children,
           });
         }
       } catch (err) {
@@ -230,6 +260,38 @@ export function VignobleMap({
   );
 
   const aop = useAopLayer(map, { onClickAop: handleAopClick });
+
+  const [aopSubregionLinks, setAopSubregionLinks] = useState<
+    Map<number, number[]>
+  >(() => new Map());
+  const [aopSubregionLinksReady, setAopSubregionLinksReady] = useState(false);
+
+  useEffect(() => {
+    const ids = aop.aopItems.map((item) => item.id);
+    if (ids.length === 0) {
+      setAopSubregionLinks(new Map());
+      setAopSubregionLinksReady(true);
+      return;
+    }
+
+    let active = true;
+    setAopSubregionLinksReady(false);
+    void getAopSubregionLinks(ids)
+      .then((links) => {
+        if (!active) return;
+        setAopSubregionLinks(links);
+        setAopSubregionLinksReady(true);
+      })
+      .catch(() => {
+        if (!active) return;
+        setAopSubregionLinks(new Map());
+        setAopSubregionLinksReady(true);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [aop.aopItems]);
 
   const subregions = useSubregionLayer(map, {
     locale,
@@ -253,6 +315,29 @@ export function VignobleMap({
   const selectedSubregion = subregions.selectedId
     ? subregions.legendItems.find((s) => s.id === subregions.selectedId) ?? null
     : null;
+
+  const filteredAopItems = useMemo(() => {
+    // Avoid emptying the list while links are still loading.
+    if (!aopSubregionLinksReady) return aop.aopItems;
+    return filterAopItemsBySubregion(
+      aop.aopItems,
+      selectedSubregion?.id ?? null,
+      aopSubregionLinks,
+    );
+  }, [
+    aop.aopItems,
+    selectedSubregion?.id,
+    aopSubregionLinks,
+    aopSubregionLinksReady,
+  ]);
+
+  const clearSubregionFilter = useCallback(() => {
+    subregions.select(null);
+    const all = subregionsBoundsRef.current;
+    if (all) {
+      camera.fitToBounds(all, { padding: 22, maxZoom: 8 });
+    }
+  }, [subregions, camera]);
 
   const enterSubregions = useCallback(
     async (region: VignobleMapRegion, focusSubregionSlug?: string) => {
@@ -300,6 +385,10 @@ export function VignobleMap({
     },
     [subregions, camera, aop],
   );
+
+  useEffect(() => {
+    enterSubregionsRef.current = enterSubregions;
+  }, [enterSubregions]);
 
   const exitSubregions = useCallback(() => {
     subregions.hide();
@@ -351,21 +440,30 @@ export function VignobleMap({
     [aop, camera, handleAopClick],
   );
 
-  // Fit camera to a selected region once its sheet has rendered (so we know
-  // how much of the map is visually hidden by the bottom card).
+  // Fit camera to a selected region, and re-fit when the bottom sheet height
+  // changes (e.g. history timeline loads into the footer).
   useEffect(() => {
     if (!map || !sheetOpen || !selectedRegion || subregionsMode) return;
-    const regionId = selectedRegion.region_id;
-    if (lastFittedRegionIdRef.current === regionId) return;
+    const el = cardRef.current;
+    if (!el) return;
 
-    const raf = requestAnimationFrame(() => {
-      const bottomInset = cardRef.current?.getBoundingClientRect().height ?? 0;
+    const fit = () => {
+      const bottomInset = el.getBoundingClientRect().height;
       const bounds = getRegionBounds(selectedRegion);
       if (!bounds) return;
       camera.fitToRegion(bounds, { bottomInset });
-      lastFittedRegionIdRef.current = regionId;
+      lastFittedRegionIdRef.current = selectedRegion.region_id;
+    };
+
+    const raf = requestAnimationFrame(fit);
+    const ro = new ResizeObserver(() => {
+      requestAnimationFrame(fit);
     });
-    return () => cancelAnimationFrame(raf);
+    ro.observe(el);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
   }, [map, sheetOpen, selectedRegion, subregionsMode, camera]);
 
   // Keep the canvas size in sync when the sheet closes.
@@ -401,10 +499,18 @@ export function VignobleMap({
 
   const aopOnly = isAopOnlyRegion(selectedRegion);
   const hasPanelContent = Boolean(selectedSubregion || selectedAop);
-  const showAopList = subregionsMode && layerMode === "aop" && aop.aopItems.length > 0;
+  const showAopList =
+    subregionsMode && layerMode === "aop" && aop.aopItems.length > 0;
   const showBottomPanel = subregionsMode && (!aopOnly || Boolean(selectedAop) || showAopList);
   const showDesktopLegendOverlay =
     subregionsMode && !aopOnly && layerMode === "subregions";
+  const showGrandCruLegend =
+    subregionsMode && layerMode === "aop" && aop.hasGrandCruMarkers;
+  const aopListFilterLabel =
+    selectedSubregion && layerMode === "aop" ? selectedSubregion.name : null;
+  const aopListClearLabel = locale === "en" ? "Show all" : "Tout afficher";
+  const aopListEmptyLabel =
+    locale === "en" ? "No AOPs in this subregion" : "Aucune AOP dans cette sous-région";
 
   return (
     <div className="flex h-full flex-col gap-1 overflow-hidden md:gap-2">
@@ -483,12 +589,26 @@ export function VignobleMap({
           </div>
         )}
 
+        {showGrandCruLegend && (
+          <div className="pointer-events-none absolute left-3 bottom-3 z-10 md:bottom-12">
+            <div className="pointer-events-auto">
+              <AopGrandCruLegend label={strings.grandCruLegend} />
+            </div>
+          </div>
+        )}
+
         {showAopList && (
           <div className="pointer-events-none absolute right-3 top-14 bottom-3 z-10 hidden md:flex md:flex-col md:items-end md:justify-start">
             <div className="pointer-events-auto">
               <AopListPanel
-                items={aop.aopItems}
+                items={filteredAopItems}
                 onPick={handleAopListPick}
+                filterLabel={aopListFilterLabel}
+                onClearFilter={
+                  aopListFilterLabel ? clearSubregionFilter : undefined
+                }
+                clearFilterLabel={aopListClearLabel}
+                emptyLabel={aopListEmptyLabel}
               />
             </div>
           </div>
@@ -499,7 +619,7 @@ export function VignobleMap({
         <div
           className={`flex-1 overflow-hidden md:min-h-0 md:flex-none ${!hasPanelContent ? "md:hidden" : ""}`}
         >
-          {selectedSubregion ? (
+          {selectedSubregion && layerMode === "subregions" ? (
             <SubregionDetailPanel
               subregion={selectedSubregion}
               locale={locale}
@@ -523,8 +643,14 @@ export function VignobleMap({
           ) : showAopList ? (
             <div className="h-full md:hidden">
               <AopListPanel
-                items={aop.aopItems}
+                items={filteredAopItems}
                 onPick={handleAopListPick}
+                filterLabel={aopListFilterLabel}
+                onClearFilter={
+                  aopListFilterLabel ? clearSubregionFilter : undefined
+                }
+                clearFilterLabel={aopListClearLabel}
+                emptyLabel={aopListEmptyLabel}
               />
             </div>
           ) : (

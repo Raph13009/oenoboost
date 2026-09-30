@@ -23,6 +23,8 @@ import { useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { AopWineColorBreakdownField } from "@/components/admin/appellations/AopWineColorBreakdownField";
+import { DgcChildSelector } from "@/components/admin/appellations/DgcChildSelector";
+import { GrapeLinkSelector } from "@/components/admin/appellations/GrapeLinkSelector";
 import { CmsRichTextEditor } from "@/components/admin/shared/CmsRichTextEditor";
 import { validateRecognitionYear } from "@/lib/aop-recognition-year";
 import { validateWineColorBreakdown } from "@/lib/aop-wine-color-breakdown";
@@ -44,10 +46,12 @@ type CardState = {
   production: boolean;
   wineColor: boolean;
   soilTypes: boolean;
+  grapes: boolean;
   climate: boolean;
   communes: boolean;
   editorial: boolean;
   flags: boolean;
+  dgc: boolean;
   technical: boolean;
   metadata: boolean;
 };
@@ -57,10 +61,12 @@ const defaultCardState: CardState = {
   production: true,
   wineColor: true,
   soilTypes: true,
+  grapes: true,
   climate: true,
   communes: true,
   editorial: true,
   flags: true,
+  dgc: true,
   technical: false,
   metadata: false,
 };
@@ -76,10 +82,12 @@ function loadCardState(): CardState {
       production: parsed.production ?? defaultCardState.production,
       wineColor: parsed.wineColor ?? defaultCardState.wineColor,
       soilTypes: parsed.soilTypes ?? defaultCardState.soilTypes,
+      grapes: parsed.grapes ?? defaultCardState.grapes,
       climate: parsed.climate ?? defaultCardState.climate,
       communes: parsed.communes ?? defaultCardState.communes,
       editorial: parsed.editorial ?? defaultCardState.editorial,
       flags: parsed.flags ?? defaultCardState.flags,
+      dgc: parsed.dgc ?? defaultCardState.dgc,
       // Always closed when entering the page (even if previously expanded).
       technical: false,
       metadata: false,
@@ -977,6 +985,7 @@ const emptyForm = (): Appellation => ({
   wine_pct_sparkling: null,
   wine_pct_liqueur: null,
   is_premium: false,
+  is_dgc_parent: false,
   status: "draft",
   published_at: null,
   created_at: "",
@@ -1123,6 +1132,7 @@ export function AppellationEditor({
         wine_pct_liqueur: form.wine_pct_liqueur ?? null,
         published_at: form.published_at || null,
         is_premium: !!form.is_premium,
+        is_dgc_parent: !!form.is_dgc_parent,
         status: form.status,
       };
       const codes = communes.map((c) => c.code_insee);
@@ -1375,6 +1385,14 @@ export function AppellationEditor({
           <SoilLinkSelector appellationId={isNew ? null : form.id} onError={setError} />
         </CollapsibleCard>
 
+        <CollapsibleCard
+          title="Cépages"
+          open={cardState.grapes}
+          onToggle={() => toggleCard("grapes")}
+        >
+          <GrapeLinkSelector appellationId={isNew ? null : form.id} onError={setError} />
+        </CollapsibleCard>
+
         <CollapsibleCard title="Climat" open={cardState.climate} onToggle={() => toggleCard("climate")}>
           <div className={fieldSpacing}>
             <p className="text-xs text-slate-500">
@@ -1441,22 +1459,22 @@ export function AppellationEditor({
               />
             </div>
             <div>
-              <label className={labelClass}>Couleurs / cépages (FR)</label>
+              <label className={labelClass}>Notes couleurs (FR)</label>
               <CmsRichTextEditor
                 key={`${form.id || "new"}-colors-grapes-fr`}
                 value={form.colors_grapes_fr ?? ""}
                 onChange={(html) => update({ colors_grapes_fr: html || null })}
-                placeholder="Couleurs et cépages en français…"
+                placeholder="Notes éditoriales sur les couleurs (hors liens cépages structurés)…"
                 minHeightClass="min-h-[5rem]"
               />
             </div>
             <div>
-              <label className={labelClass}>Couleurs / cépages (EN)</label>
+              <label className={labelClass}>Notes couleurs (EN)</label>
               <CmsRichTextEditor
                 key={`${form.id || "new"}-colors-grapes-en`}
                 value={form.colors_grapes_en ?? ""}
                 onChange={(html) => update({ colors_grapes_en: html || null })}
-                placeholder="Wine colors and grape varieties in English…"
+                placeholder="Editorial notes on wine colors (structured grape links are separate)…"
                 minHeightClass="min-h-[5rem]"
               />
             </div>
@@ -1525,7 +1543,31 @@ export function AppellationEditor({
               />
               <span>Premium</span>
             </label>
+            <label className="flex items-center gap-2 text-sm text-slate-800">
+              <input
+                type="checkbox"
+                checked={!!form.is_dgc_parent}
+                onChange={(e) => update({ is_dgc_parent: e.target.checked })}
+                className="h-4 w-4 rounded border-slate-300"
+              />
+              <span>AOP parente (DGC)</span>
+            </label>
+            <p className="text-xs text-slate-500">
+              Marque cette AOP comme fiche principale pour des DGC / appellations filles.
+            </p>
           </div>
+        </CollapsibleCard>
+
+        <CollapsibleCard
+          title="DGC / Appellations filles"
+          open={cardState.dgc}
+          onToggle={() => toggleCard("dgc")}
+        >
+          <DgcChildSelector
+            appellationId={isNew ? null : form.id}
+            enabled={!!form.is_dgc_parent}
+            onError={setError}
+          />
         </CollapsibleCard>
 
         <CollapsibleCard

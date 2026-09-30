@@ -5,6 +5,7 @@ export type AopMapItem = {
   aop_name: string;
   /** Precomputed geodesic area in m². Null only if the backfill hasn't run. */
   area_m2: number | null;
+  is_grand_cru: boolean;
   geometry: unknown;
 };
 
@@ -24,5 +25,12 @@ export async function getAopCommunesInBbox(
 
   if (error) throw new Error(`Failed to fetch AOP communes: ${error.message}`);
 
-  return (data ?? []) as AopMapItem[];
+  return (
+    (data ?? []) as Array<
+      Omit<AopMapItem, "is_grand_cru"> & { is_grand_cru?: boolean | null }
+    >
+  ).map((row) => ({
+    ...row,
+    is_grand_cru: Boolean(row.is_grand_cru),
+  }));
 }

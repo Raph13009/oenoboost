@@ -47,3 +47,10 @@ Bug fixes should add a permanent regression test whenever reasonably possible.
 ## Commands
 
 See `docs/QA.md`.
+
+## Database schema reference (issue #25)
+
+- **Canonical file:** `docs/DATABASE_SCHEMA.sql` (documentation only; migrations live in `apps/web/supabase/migrations/`).
+- **Policy:** `docs/DATABASE_SCHEMA.md`.
+- App and CMS keep **pointers only** (`apps/web/.cursor/rules/DATABASE_SCHEMA.md`, `apps/cms/docs/DATABASE_SCHEMA.md`) — do not maintain divergent full dumps.
+- Any DB-impacting Issue/PR must update the canonical SQL in the same change set.

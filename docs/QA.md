@@ -25,11 +25,12 @@ Targeted unit checks:
 
 ## Setup
 
-1. Copy `.env.qa.example` → `.env.qa`
-2. Prefer a **dedicated Supabase test project** (never production for writes).
-3. Set Mapbox token for map tests.
-4. Optional: `QA_FREE_*` / `QA_PREMIUM_*` accounts for auth scenarios.
-5. Install browsers once: `npx playwright install chromium`
+1. Use **Node.js 22+** (see `.nvmrc`). Node 20 breaks CMS rich-text unit tests (`isomorphic-dompurify` / undici) and older supabase-js Realtime init.
+2. Copy `.env.qa.example` → `.env.qa`
+3. Prefer a **dedicated Supabase test project** (never production for writes).
+4. Set Mapbox token for map tests.
+5. Optional: `QA_FREE_*` / `QA_PREMIUM_*` accounts for auth scenarios.
+6. Install browsers once: `npx playwright install chromium`
 
 ```bash
 npm install
@@ -71,7 +72,8 @@ Playwright config: `playwright.config.ts`
 
 - Migrations live in `apps/web/supabase/migrations/` (incremental; not a full bootstrap from empty).
 - `qa:db` validates migration ordering + optional **read-only** live probes.
-- Canonical schema reference: `docs/DATABASE_SCHEMA.sql` (keep in sync when schema changes).
+- Canonical schema reference: `docs/DATABASE_SCHEMA.sql` (keep in sync when schema changes; see `docs/DATABASE_SCHEMA.md` / issue #25).
+- App/CMS schema files are pointers only — do not let package-local dumps diverge.
 - No destructive automated QA against production.
 
 ## Future tests (fix until Issues ship)

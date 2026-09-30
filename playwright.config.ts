@@ -33,7 +33,8 @@ export default defineConfig({
     screenshot: "only-on-failure",
     video: "retain-on-failure",
     actionTimeout: 15_000,
-    navigationTimeout: 45_000,
+    // Dev `next` first compile of heavy fiches (sols, AOP detail) often exceeds 45s.
+    navigationTimeout: 60_000,
   },
   projects: [
     {
@@ -75,13 +76,15 @@ export default defineConfig({
     ? undefined
     : [
         {
-          command: `npm --workspace apps/web run dev -- -p ${WEB_PORT}`,
+          // Monorepo uses pnpm (`--filter`), not npm `--workspace`.
+          // Prefer PORT=… over `next dev -p` so pnpm does not swallow/misroute flags.
+          command: `PORT=${WEB_PORT} pnpm --filter oenoboost-app dev`,
           url: WEB_URL,
           reuseExistingServer: !process.env.CI,
           timeout: 180_000,
         },
         {
-          command: `npm --workspace apps/cms run dev -- -p ${CMS_PORT}`,
+          command: `PORT=${CMS_PORT} pnpm --filter oenoboost-1 dev`,
           url: `${CMS_URL}/admin`,
           reuseExistingServer: !process.env.CI,
           timeout: 180_000,

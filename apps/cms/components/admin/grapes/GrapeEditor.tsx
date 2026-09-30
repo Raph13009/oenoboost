@@ -11,6 +11,11 @@ import { useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { ProductionCountriesSelect } from "@/components/admin/grapes/ProductionCountriesSelect";
+import { GrapeProfileRadarField } from "@/components/admin/grapes/GrapeProfileRadarField";
+import { EmblematicAopSelector } from "@/components/admin/grapes/EmblematicAopSelector";
+import { CmsRichTextEditor } from "@/components/admin/shared/CmsRichTextEditor";
+import { validateGrapeRadarFields } from "@/lib/grape-radar";
+import { normalizeRichTextForStorage } from "@/lib/richtext-html";
 
 const cardClass =
   "rounded-lg border border-slate-200 bg-slate-50/50 shadow-sm overflow-hidden";
@@ -26,6 +31,8 @@ const CARD_STATE_KEY = "cms-grapes-card-state";
 type CardState = {
   identity: boolean;
   origin: boolean;
+  profile: boolean;
+  emblematic: boolean;
   editorial: boolean;
   flags: boolean;
   technical: boolean;
@@ -35,6 +42,8 @@ type CardState = {
 const defaultCardState: CardState = {
   identity: true,
   origin: true,
+  profile: true,
+  emblematic: true,
   editorial: true,
   flags: true,
   technical: false,
@@ -50,6 +59,8 @@ function loadCardState(): CardState {
     return {
       identity: parsed.identity ?? defaultCardState.identity,
       origin: parsed.origin ?? defaultCardState.origin,
+      profile: parsed.profile ?? defaultCardState.profile,
+      emblematic: parsed.emblematic ?? defaultCardState.emblematic,
       editorial: parsed.editorial ?? defaultCardState.editorial,
       flags: parsed.flags ?? defaultCardState.flags,
       technical: false,
@@ -190,6 +201,11 @@ const emptyForm = (): Grape => ({
   tasting_traits_en: null,
   emblematic_wines_fr: null,
   emblematic_wines_en: null,
+  radar_acidity: null,
+  radar_body: null,
+  radar_aromatic_intensity: null,
+  radar_tannins: null,
+  radar_alcohol_potential: null,
   production_countries: null,
   is_premium: false,
   status: "draft",
@@ -237,6 +253,17 @@ export function GrapeEditor({ grape, onClose, onDeleted }: Props) {
       setError("Le type est obligatoire : choisissez Rouge, Blanc ou Rosé.");
       return;
     }
+    const radarError = validateGrapeRadarFields({
+      radar_acidity: form.radar_acidity,
+      radar_body: form.radar_body,
+      radar_aromatic_intensity: form.radar_aromatic_intensity,
+      radar_tannins: form.radar_tannins,
+      radar_alcohol_potential: form.radar_alcohol_potential,
+    });
+    if (radarError) {
+      setError(radarError);
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -248,18 +275,23 @@ export function GrapeEditor({ grape, onClose, onDeleted }: Props) {
         origin_region_en: form.origin_region_en || null,
         origin_latitude: form.origin_latitude ?? null,
         origin_longitude: form.origin_longitude ?? null,
-        history_fr: form.history_fr || null,
-        history_en: form.history_en || null,
-        crossings_fr: form.crossings_fr || null,
-        crossings_en: form.crossings_en || null,
-        production_regions_fr: form.production_regions_fr || null,
-        production_regions_en: form.production_regions_en || null,
-        viticultural_traits_fr: form.viticultural_traits_fr || null,
-        viticultural_traits_en: form.viticultural_traits_en || null,
-        tasting_traits_fr: form.tasting_traits_fr || null,
-        tasting_traits_en: form.tasting_traits_en || null,
+        history_fr: normalizeRichTextForStorage(form.history_fr),
+        history_en: normalizeRichTextForStorage(form.history_en),
+        crossings_fr: normalizeRichTextForStorage(form.crossings_fr),
+        crossings_en: normalizeRichTextForStorage(form.crossings_en),
+        production_regions_fr: normalizeRichTextForStorage(form.production_regions_fr),
+        production_regions_en: normalizeRichTextForStorage(form.production_regions_en),
+        viticultural_traits_fr: normalizeRichTextForStorage(form.viticultural_traits_fr),
+        viticultural_traits_en: normalizeRichTextForStorage(form.viticultural_traits_en),
+        tasting_traits_fr: normalizeRichTextForStorage(form.tasting_traits_fr),
+        tasting_traits_en: normalizeRichTextForStorage(form.tasting_traits_en),
         emblematic_wines_fr: form.emblematic_wines_fr || null,
         emblematic_wines_en: form.emblematic_wines_en || null,
+        radar_acidity: form.radar_acidity ?? null,
+        radar_body: form.radar_body ?? null,
+        radar_aromatic_intensity: form.radar_aromatic_intensity ?? null,
+        radar_tannins: form.radar_tannins ?? null,
+        radar_alcohol_potential: form.radar_alcohol_potential ?? null,
         production_countries: form.production_countries ?? null,
         is_premium: !!form.is_premium,
         status: form.status || "draft",
@@ -449,55 +481,148 @@ export function GrapeEditor({ grape, onClose, onDeleted }: Props) {
           </div>
         </CollapsibleCard>
 
+        <CollapsibleCard
+          title="Profil du cépage"
+          open={cardState.profile}
+          onToggle={() => toggleCard("profile")}
+        >
+          <GrapeProfileRadarField
+            value={{
+              radar_acidity: form.radar_acidity,
+              radar_body: form.radar_body,
+              radar_aromatic_intensity: form.radar_aromatic_intensity,
+              radar_tannins: form.radar_tannins,
+              radar_alcohol_potential: form.radar_alcohol_potential,
+            }}
+            onChange={(next) => update(next)}
+            disabled={saving}
+          />
+        </CollapsibleCard>
+
+        <CollapsibleCard
+          title="AOP emblématiques"
+          open={cardState.emblematic}
+          onToggle={() => toggleCard("emblematic")}
+        >
+          <EmblematicAopSelector
+            grapeId={isNew ? null : form.id}
+            onError={setError}
+          />
+        </CollapsibleCard>
+
         <CollapsibleCard title="Éditorial" open={cardState.editorial} onToggle={() => toggleCard("editorial")}>
           <div className={fieldSpacing}>
             <div className="grid grid-cols-1 gap-x-3 gap-y-2.5 sm:grid-cols-2">
               <div>
                 <label className={labelClass}>Histoire (FR)</label>
-                <AutoResizeTextarea value={form.history_fr ?? ""} onChange={(e) => update({ history_fr: e.target.value || null })} minRows={2} className={textareaClass} />
+                <CmsRichTextEditor
+                  key={`${form.id || "new"}-history-fr`}
+                  value={form.history_fr ?? ""}
+                  onChange={(html) => update({ history_fr: html || null })}
+                  placeholder="Histoire du cépage…"
+                  minHeightClass="min-h-[6rem]"
+                />
               </div>
               <div>
                 <label className={labelClass}>Histoire (EN)</label>
-                <AutoResizeTextarea value={form.history_en ?? ""} onChange={(e) => update({ history_en: e.target.value || null })} minRows={2} className={textareaClass} />
+                <CmsRichTextEditor
+                  key={`${form.id || "new"}-history-en`}
+                  value={form.history_en ?? ""}
+                  onChange={(html) => update({ history_en: html || null })}
+                  placeholder="Grape history…"
+                  minHeightClass="min-h-[6rem]"
+                />
               </div>
               <div>
                 <label className={labelClass}>Croisements (FR)</label>
-                <AutoResizeTextarea value={form.crossings_fr ?? ""} onChange={(e) => update({ crossings_fr: e.target.value || null })} minRows={2} className={textareaClass} />
+                <CmsRichTextEditor
+                  key={`${form.id || "new"}-crossings-fr`}
+                  value={form.crossings_fr ?? ""}
+                  onChange={(html) => update({ crossings_fr: html || null })}
+                  placeholder="Croisements…"
+                  minHeightClass="min-h-[5rem]"
+                />
               </div>
               <div>
                 <label className={labelClass}>Croisements (EN)</label>
-                <AutoResizeTextarea value={form.crossings_en ?? ""} onChange={(e) => update({ crossings_en: e.target.value || null })} minRows={2} className={textareaClass} />
+                <CmsRichTextEditor
+                  key={`${form.id || "new"}-crossings-en`}
+                  value={form.crossings_en ?? ""}
+                  onChange={(html) => update({ crossings_en: html || null })}
+                  placeholder="Crossings…"
+                  minHeightClass="min-h-[5rem]"
+                />
               </div>
               <div>
                 <label className={labelClass}>Régions de production (FR)</label>
-                <AutoResizeTextarea value={form.production_regions_fr ?? ""} onChange={(e) => update({ production_regions_fr: e.target.value || null })} minRows={2} className={textareaClass} />
+                <CmsRichTextEditor
+                  key={`${form.id || "new"}-prod-fr`}
+                  value={form.production_regions_fr ?? ""}
+                  onChange={(html) => update({ production_regions_fr: html || null })}
+                  placeholder="Régions de production…"
+                  minHeightClass="min-h-[5rem]"
+                />
               </div>
               <div>
                 <label className={labelClass}>Régions de production (EN)</label>
-                <AutoResizeTextarea value={form.production_regions_en ?? ""} onChange={(e) => update({ production_regions_en: e.target.value || null })} minRows={2} className={textareaClass} />
+                <CmsRichTextEditor
+                  key={`${form.id || "new"}-prod-en`}
+                  value={form.production_regions_en ?? ""}
+                  onChange={(html) => update({ production_regions_en: html || null })}
+                  placeholder="Production regions…"
+                  minHeightClass="min-h-[5rem]"
+                />
               </div>
               <div>
                 <label className={labelClass}>Traits viticoles (FR)</label>
-                <AutoResizeTextarea value={form.viticultural_traits_fr ?? ""} onChange={(e) => update({ viticultural_traits_fr: e.target.value || null })} minRows={2} className={textareaClass} />
+                <CmsRichTextEditor
+                  key={`${form.id || "new"}-vit-fr`}
+                  value={form.viticultural_traits_fr ?? ""}
+                  onChange={(html) => update({ viticultural_traits_fr: html || null })}
+                  placeholder="Traits viticoles…"
+                  minHeightClass="min-h-[5rem]"
+                />
               </div>
               <div>
                 <label className={labelClass}>Traits viticoles (EN)</label>
-                <AutoResizeTextarea value={form.viticultural_traits_en ?? ""} onChange={(e) => update({ viticultural_traits_en: e.target.value || null })} minRows={2} className={textareaClass} />
+                <CmsRichTextEditor
+                  key={`${form.id || "new"}-vit-en`}
+                  value={form.viticultural_traits_en ?? ""}
+                  onChange={(html) => update({ viticultural_traits_en: html || null })}
+                  placeholder="Viticultural traits…"
+                  minHeightClass="min-h-[5rem]"
+                />
               </div>
               <div>
                 <label className={labelClass}>Traits de dégustation (FR)</label>
-                <AutoResizeTextarea value={form.tasting_traits_fr ?? ""} onChange={(e) => update({ tasting_traits_fr: e.target.value || null })} minRows={2} className={textareaClass} />
+                <CmsRichTextEditor
+                  key={`${form.id || "new"}-taste-fr`}
+                  value={form.tasting_traits_fr ?? ""}
+                  onChange={(html) => update({ tasting_traits_fr: html || null })}
+                  placeholder="Traits de dégustation…"
+                  minHeightClass="min-h-[5rem]"
+                />
               </div>
               <div>
                 <label className={labelClass}>Traits de dégustation (EN)</label>
-                <AutoResizeTextarea value={form.tasting_traits_en ?? ""} onChange={(e) => update({ tasting_traits_en: e.target.value || null })} minRows={2} className={textareaClass} />
+                <CmsRichTextEditor
+                  key={`${form.id || "new"}-taste-en`}
+                  value={form.tasting_traits_en ?? ""}
+                  onChange={(html) => update({ tasting_traits_en: html || null })}
+                  placeholder="Tasting traits…"
+                  minHeightClass="min-h-[5rem]"
+                />
               </div>
               <div>
-                <label className={labelClass}>Vins emblématiques (FR)</label>
+                <label className={labelClass}>
+                  Vins emblématiques — texte legacy (FR)
+                </label>
                 <AutoResizeTextarea value={form.emblematic_wines_fr ?? ""} onChange={(e) => update({ emblematic_wines_fr: e.target.value || null })} minRows={2} className={textareaClass} />
               </div>
               <div>
-                <label className={labelClass}>Vins emblématiques (EN)</label>
+                <label className={labelClass}>
+                  Vins emblématiques — texte legacy (EN)
+                </label>
                 <AutoResizeTextarea value={form.emblematic_wines_en ?? ""} onChange={(e) => update({ emblematic_wines_en: e.target.value || null })} minRows={2} className={textareaClass} />
               </div>
             </div>

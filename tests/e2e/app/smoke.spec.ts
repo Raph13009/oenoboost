@@ -3,14 +3,16 @@ import { attachErrorProbe, assertNoHardCrashes } from "../helpers/errors";
 import { hasSupabaseEnv, loadFixtures } from "../helpers/fixtures";
 
 test.describe("App smoke @smoke", () => {
+  // Cold Next compiles of fiche pages can exceed the global 60s under load.
+  test.describe.configure({ timeout: 90_000 });
+
   test.beforeEach(() => {
     test.skip(!hasSupabaseEnv(), "Requires Supabase env (.env.qa)");
   });
 
   test("homepage loads", async ({ page }) => {
     const probe = attachErrorProbe(page);
-    await page.goto("/");
-    await expect(page.locator("body")).toBeVisible();
+    await page.goto("/", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("link", { name: /vignoble/i }).first()).toBeVisible();
     assertNoHardCrashes(probe);
   });
@@ -18,7 +20,7 @@ test.describe("App smoke @smoke", () => {
   test("vineyard map loads", async ({ page }) => {
     test.skip(!process.env.NEXT_PUBLIC_MAPBOX_TOKEN, "Requires Mapbox token");
     const probe = attachErrorProbe(page);
-    await page.goto("/vignoble");
+    await page.goto("/vignoble", { waitUntil: "domcontentloaded" });
     await expect(page.locator(".mapboxgl-canvas, canvas").first()).toBeVisible({
       timeout: 45_000,
     });
@@ -27,7 +29,7 @@ test.describe("App smoke @smoke", () => {
 
   test("AOP browse list loads and filter control works", async ({ page }) => {
     const probe = attachErrorProbe(page);
-    await page.goto("/vignoble/aop");
+    await page.goto("/vignoble/aop", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     const regionSelect = page.locator('select[name="region"]');
     await expect(regionSelect).toBeVisible();
@@ -37,7 +39,8 @@ test.describe("App smoke @smoke", () => {
       const value = await options.nth(1).getAttribute("value");
       if (value) {
         await regionSelect.selectOption(value);
-        await expect(page).toHaveURL(/region=/);
+        // Client-side router.replace — allow transition under cold Next compile.
+        await expect(page).toHaveURL(/region=/, { timeout: 30_000 });
       }
     }
     assertNoHardCrashes(probe);
@@ -49,6 +52,7 @@ test.describe("App smoke @smoke", () => {
     const probe = attachErrorProbe(page);
     await page.goto(
       `/vignoble/${fixtures.regionSlug}/${fixtures.aopSlug}?from=list`,
+      { waitUntil: "domcontentloaded" },
     );
     await expect(page.getByRole("heading", { level: 1 })).toContainText(
       fixtures.aopName ?? fixtures.aopSlug!,
@@ -61,7 +65,9 @@ test.describe("App smoke @smoke", () => {
     const fixtures = await loadFixtures();
     test.skip(!fixtures.grapeSlug, "No grape fixture");
     const probe = attachErrorProbe(page);
-    await page.goto(`/cepages/${fixtures.grapeSlug}`);
+    await page.goto(`/cepages/${fixtures.grapeSlug}`, {
+      waitUntil: "domcontentloaded",
+    });
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     assertNoHardCrashes(probe);
   });
@@ -70,8 +76,12 @@ test.describe("App smoke @smoke", () => {
     const fixtures = await loadFixtures();
     test.skip(!fixtures.soilSlug, "No soil fixture");
     const probe = attachErrorProbe(page);
-    await page.goto(`/sols/${fixtures.soilSlug}`);
-    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await page.goto(`/sols/${fixtures.soilSlug}`, {
+      waitUntil: "domcontentloaded",
+    });
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible({
+      timeout: 30_000,
+    });
     assertNoHardCrashes(probe);
   });
 
@@ -79,8 +89,12 @@ test.describe("App smoke @smoke", () => {
     const fixtures = await loadFixtures();
     test.skip(!fixtures.vinificationSlug, "No vinification fixture");
     const probe = attachErrorProbe(page);
-    await page.goto(`/vinification/${fixtures.vinificationSlug}`);
-    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await page.goto(`/vinification/${fixtures.vinificationSlug}`, {
+      waitUntil: "domcontentloaded",
+    });
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible({
+      timeout: 30_000,
+    });
     assertNoHardCrashes(probe);
   });
 
@@ -88,8 +102,10 @@ test.describe("App smoke @smoke", () => {
     const fixtures = await loadFixtures();
     test.skip(!fixtures.vinificationSlug, "No vinification fixture");
     const probe = attachErrorProbe(page);
-    await page.goto("/vinification");
-    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await page.goto("/vinification", { waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible({
+      timeout: 30_000,
+    });
 
     const card = page.locator(`a[href="/vinification/${fixtures.vinificationSlug}"]`);
     await expect(card).toBeVisible();

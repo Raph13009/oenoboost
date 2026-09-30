@@ -8,6 +8,7 @@ import {
 } from "@/app/admin/(cms)/wine-regions/actions";
 import { useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
+import { RegionHistorySection } from "./RegionHistorySection";
 
 const cardClass =
   "rounded-lg border border-slate-200 bg-slate-50/50 shadow-sm overflow-hidden";
@@ -20,11 +21,18 @@ const fieldSpacing = "space-y-2.5";
 
 const CARD_STATE_KEY = "cms-wine-regions-card-state";
 
-type CardState = { identity: boolean; editorial: boolean; technical: boolean; metadata: boolean };
+type CardState = {
+  identity: boolean;
+  editorial: boolean;
+  history: boolean;
+  technical: boolean;
+  metadata: boolean;
+};
 
 const defaultCardState: CardState = {
   identity: true,
   editorial: true,
+  history: true,
   technical: false,
   metadata: false,
 };
@@ -38,6 +46,7 @@ function loadCardState(): CardState {
     return {
       identity: parsed.identity ?? defaultCardState.identity,
       editorial: parsed.editorial ?? defaultCardState.editorial,
+      history: parsed.history ?? defaultCardState.history,
       // Always closed when entering the page (even if previously expanded).
       technical: false,
       metadata: false,
@@ -440,7 +449,19 @@ export function RegionEditor({ region, onClose, onDeleted }: Props) {
             </div>
         </CollapsibleCard>
 
-        {/* Section 3 — Technical (read-only) */}
+        {/* Section 3 — History timeline */}
+        <CollapsibleCard
+          title="Historique / Timeline"
+          open={cardState.history}
+          onToggle={() => toggleCard("history")}
+        >
+          <RegionHistorySection
+            regionId={isNew ? null : form.id}
+            onError={setError}
+          />
+        </CollapsibleCard>
+
+        {/* Section 4 — Technical (read-only) */}
         <CollapsibleCard
           title="Données techniques"
           open={cardState.technical}
@@ -470,7 +491,7 @@ export function RegionEditor({ region, onClose, onDeleted }: Props) {
               </dl>
         </CollapsibleCard>
 
-        {/* Section 4 — System metadata (read-only) */}
+        {/* Section 5 — System metadata (read-only) */}
         {!isNew && (
           <CollapsibleCard
             title="Métadonnées système"

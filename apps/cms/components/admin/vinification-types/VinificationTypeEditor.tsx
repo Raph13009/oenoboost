@@ -18,6 +18,7 @@ import {
 import { useRouter } from "next/navigation";
 import { ChevronDown, GripVertical, Plus, Trash2 } from "lucide-react";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
+import { CmsRichTextEditor } from "@/components/admin/shared/CmsRichTextEditor";
 
 const cardClass =
   "rounded-lg border border-slate-200 bg-slate-50/50 shadow-sm overflow-hidden";
@@ -290,20 +291,22 @@ function StepCard({
             </div>
             <div>
               <label className={labelClass}>detail_fr</label>
-              <AutoResizeTextarea
+              <CmsRichTextEditor
+                key={`${step.id}-detail-fr`}
                 value={step.detail_fr ?? ""}
-                onChange={(e) => onChange(step.id, { detail_fr: e.target.value || null })}
-                minRows={3}
-                className={textareaClass}
+                onChange={(html) => onChange(step.id, { detail_fr: html || null })}
+                placeholder="Détail de l’étape…"
+                minHeightClass="min-h-[6rem]"
               />
             </div>
             <div>
               <label className={labelClass}>detail_en</label>
-              <AutoResizeTextarea
+              <CmsRichTextEditor
+                key={`${step.id}-detail-en`}
                 value={step.detail_en ?? ""}
-                onChange={(e) => onChange(step.id, { detail_en: e.target.value || null })}
-                minRows={3}
-                className={textareaClass}
+                onChange={(html) => onChange(step.id, { detail_en: html || null })}
+                placeholder="Step detail…"
+                minHeightClass="min-h-[6rem]"
               />
             </div>
           </div>

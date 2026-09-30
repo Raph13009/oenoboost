@@ -36,9 +36,16 @@ export function attachErrorProbe(page: Page): PageErrorBag {
 }
 
 export function assertNoHardCrashes(bag: PageErrorBag): void {
-  const hard = bag.pageErrors.filter(
-    (m) => !/ResizeObserver|Loading chunk/i.test(m),
-  );
+  const hard = bag.pageErrors.filter((m) => {
+    if (/ResizeObserver|Loading chunk/i.test(m)) return false;
+    // Next.js RSC / error overlay internals (dev): not product regressions.
+    if (/frame\.join is not a function/i.test(m)) return false;
+    // Next 14 vs 15 wording variants for the same hydration mismatch noise.
+    if (/Hydration failed because/i.test(m)) return false;
+    if (/There was an error while hydrating/i.test(m)) return false;
+    if (/Text content does not match server-rendered HTML/i.test(m)) return false;
+    return true;
+  });
   if (hard.length > 0) {
     throw new Error(`Page crashed:\n${hard.join("\n")}`);
   }

@@ -1,4 +1,4 @@
-import { area } from "@turf/turf";
+import { area, centroid } from "@turf/turf";
 
 import { CONTRAST_SUBREGION_COLORS } from "../geo/color";
 import { normalizeToMultiPolygon } from "../geo/geometry";
@@ -9,6 +9,7 @@ export type AopFeatureProperties = {
   color_hex: string;
   /** Geodesic area in m² — used for render ordering and smallest-pick hit-testing. */
   area_m2: number;
+  is_grand_cru: boolean;
 };
 
 export type AopFeature = {
@@ -16,6 +17,17 @@ export type AopFeature = {
   id: number;
   properties: AopFeatureProperties;
   geometry: GeoJSON.MultiPolygon;
+};
+
+export type AopGrandCruPointFeature = {
+  type: "Feature";
+  id: number;
+  properties: {
+    aop_id: number;
+    aop_name: string;
+    is_grand_cru: true;
+  };
+  geometry: GeoJSON.Point;
 };
 
 export type AopInput = {
@@ -28,6 +40,7 @@ export type AopInput = {
    * client-side turf computation if missing (e.g. a stale backfill).
    */
   area_m2?: number | null;
+  is_grand_cru?: boolean | null;
 };
 
 /**
@@ -70,6 +83,7 @@ export function buildAopFeatures(aops: AopInput[]): AopFeature[] {
         aop_name: aop.aop_name,
         color_hex: color,
         area_m2: areaM2,
+        is_grand_cru: Boolean(aop.is_grand_cru),
       },
       geometry: normalized,
     });
@@ -77,6 +91,29 @@ export function buildAopFeatures(aops: AopInput[]): AopFeature[] {
 
   features.sort((a, b) => b.properties.area_m2 - a.properties.area_m2);
   return features;
+}
+
+/** Centroid points for Grand Cru AOPs (issue #6). Non–Grand Cru skipped. */
+export function buildGrandCruPointFeatures(
+  features: readonly AopFeature[],
+): AopGrandCruPointFeature[] {
+  const points: AopGrandCruPointFeature[] = [];
+  for (const feature of features) {
+    if (!feature.properties.is_grand_cru) continue;
+    const center = centroid(feature);
+    if (center.geometry.type !== "Point") continue;
+    points.push({
+      type: "Feature",
+      id: feature.id,
+      properties: {
+        aop_id: feature.id,
+        aop_name: feature.properties.aop_name,
+        is_grand_cru: true,
+      },
+      geometry: center.geometry,
+    });
+  }
+  return points;
 }
 
 type HitFeature = { properties?: { area_m2?: number } | null };

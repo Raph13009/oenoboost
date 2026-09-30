@@ -5,7 +5,10 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { getServerLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { isGrapeFavorited } from "@/features/cepages/queries/favorites.queries";
-import { getGrapeBySlug } from "@/features/cepages/queries/grapes.queries";
+import {
+  getEmblematicAopsForGrape,
+  getGrapeBySlug,
+} from "@/features/cepages/queries/grapes.queries";
 import { GrapeDetail } from "@/features/cepages/components/grape-detail";
 
 type Props = {
@@ -23,9 +26,10 @@ export default async function GrapeDetailPage({ params, searchParams }: Props) {
   if (!grape) notFound();
 
   const user = await getCurrentUser();
-  const initialFavorited = user
-    ? await isGrapeFavorited(user.id, grape.id)
-    : false;
+  const [initialFavorited, emblematicAops] = await Promise.all([
+    user ? isGrapeFavorited(user.id, grape.id) : Promise.resolve(false),
+    getEmblematicAopsForGrape(grape.id),
+  ]);
 
   const isFromFavorites = qp.from === "favorites";
   const backHref = isFromFavorites ? "/profil/favoris" : "/cepages";
@@ -56,6 +60,7 @@ export default async function GrapeDetailPage({ params, searchParams }: Props) {
       <GrapeDetail
         grape={grape}
         locale={locale}
+        emblematicAops={emblematicAops}
         userPlan={user?.plan === "premium" ? "premium" : "free"}
         favorite={{
           grapeId: grape.id,
@@ -88,8 +93,15 @@ export default async function GrapeDetailPage({ params, searchParams }: Props) {
           productionRegions: dict.cepages.productionRegions,
           crossings: dict.cepages.crossings,
           emblematicWines: dict.cepages.emblematicWines,
+          noEmblematicAops: dict.cepages.noEmblematicAops,
           grapeGlobe: dict.cepages.grapeGlobe,
           mapUnavailable: dict.cepages.mapUnavailable,
+          profileTitle: dict.cepages.profileTitle,
+          radarAcidity: dict.cepages.radarAcidity,
+          radarBody: dict.cepages.radarBody,
+          radarAromaticIntensity: dict.cepages.radarAromaticIntensity,
+          radarTannins: dict.cepages.radarTannins,
+          radarAlcoholPotential: dict.cepages.radarAlcoholPotential,
           red: dict.cepages.red,
           white: dict.cepages.white,
           rose: dict.cepages.rose,

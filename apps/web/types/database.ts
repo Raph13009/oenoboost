@@ -20,6 +20,21 @@ export type WineRegion = {
   deleted_at: string | null;
 };
 
+export type WineRegionHistoryMilestone = {
+  id: string;
+  region_id: string;
+  milestone_order: number;
+  period_label_fr: string;
+  period_label_en: string;
+  title_fr: string;
+  title_en: string;
+  detail_fr: string | null;
+  detail_en: string | null;
+  icon_url: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 /**
  * Subregion shape as exposed to the app. Backed by `public.subregions`
  * (integer id, N:N commune links via `communes_full_subregion_link`).
@@ -98,6 +113,16 @@ export type Favorite = {
   created_at: string;
 };
 
+/** Private Premium note on an AOP fiche (issue #10). */
+export type UserAopNote = {
+  id: string;
+  user_id: string;
+  aop_id: number;
+  body: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Grape = {
   id: string;
   slug: string;
@@ -123,6 +148,12 @@ export type Grape = {
   tasting_traits_en: string | null;
   emblematic_wines_fr: string | null;
   emblematic_wines_en: string | null;
+  /** Profil du cépage axes (0–8). Null when unset. */
+  radar_acidity: number | null;
+  radar_body: number | null;
+  radar_aromatic_intensity: number | null;
+  radar_tannins: number | null;
+  radar_alcohol_potential: number | null;
   is_premium: boolean;
   status: string;
   published_at: string | null;
