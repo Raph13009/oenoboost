@@ -1,6 +1,10 @@
 "use server";
 
 import { getSupabaseAdmin } from "@/lib/supabase";
+import {
+  normalizeGrapeRadarFields,
+  validateGrapeRadarFields,
+} from "@/lib/grape-radar";
 import { revalidatePath } from "next/cache";
 
 export type Grape = {
@@ -26,6 +30,12 @@ export type Grape = {
   tasting_traits_en: string | null;
   emblematic_wines_fr: string | null;
   emblematic_wines_en: string | null;
+  /** Profil du cépage axes (0–8). Null when unset. */
+  radar_acidity: number | null;
+  radar_body: number | null;
+  radar_aromatic_intensity: number | null;
+  radar_tannins: number | null;
+  radar_alcohol_potential: number | null;
   /** JSON array of English country names, e.g. ["France", "USA"] */
   production_countries: string[] | null;
   is_premium: boolean;
@@ -36,6 +46,13 @@ export type Grape = {
   deleted_at: string | null;
 };
 
+export type GrapeEmblematicAop = {
+  id: string;
+  name: string;
+  slug: string;
+  sort_order: number;
+};
+
 export type GrapeListItem = Pick<
   Grape,
   "id" | "slug" | "name_fr" | "name_en" | "type" | "origin_country" | "status" | "updated_at"
@@ -43,7 +60,13 @@ export type GrapeListItem = Pick<
 
 const GRAPE_LIST_COLUMNS = "id,slug,name_fr,name_en,type,origin_country,status,updated_at";
 const GRAPE_DETAIL_COLUMNS =
-  "id,slug,name_fr,name_en,type,origin_country,origin_region_fr,origin_region_en,origin_latitude,origin_longitude,history_fr,history_en,crossings_fr,crossings_en,production_regions_fr,production_regions_en,viticultural_traits_fr,viticultural_traits_en,tasting_traits_fr,tasting_traits_en,emblematic_wines_fr,emblematic_wines_en,production_countries,is_premium,status,published_at,created_at,updated_at,deleted_at";
+  "id,slug,name_fr,name_en,type,origin_country,origin_region_fr,origin_region_en,origin_latitude,origin_longitude,history_fr,history_en,crossings_fr,crossings_en,production_regions_fr,production_regions_en,viticultural_traits_fr,viticultural_traits_en,tasting_traits_fr,tasting_traits_en,emblematic_wines_fr,emblematic_wines_en,radar_acidity,radar_body,radar_aromatic_intensity,radar_tannins,radar_alcohol_potential,production_countries,is_premium,status,published_at,created_at,updated_at,deleted_at";
+
+function toNumberId(raw: string | number | null | undefined): number | null {
+  if (raw == null || raw === "") return null;
+  const n = typeof raw === "number" ? raw : Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
 
 function parseProductionCountries(raw: unknown): string[] | null {
   if (raw == null) return null;
@@ -116,48 +139,75 @@ export async function getGrape(id: string): Promise<Grape | null> {
     .single();
   if (error || !data) return null;
   const row = data as Record<string, unknown>;
+  const radar = normalizeGrapeRadarFields({
+    radar_acidity: (row.radar_acidity as number | null) ?? null,
+    radar_body: (row.radar_body as number | null) ?? null,
+    radar_aromatic_intensity:
+      (row.radar_aromatic_intensity as number | null) ?? null,
+    radar_tannins: (row.radar_tannins as number | null) ?? null,
+    radar_alcohol_potential:
+      (row.radar_alcohol_potential as number | null) ?? null,
+  });
   return {
     ...(row as unknown as Grape),
+    ...radar,
     production_countries: parseProductionCountries(row.production_countries),
   };
 }
 
 type GrapeForm = Omit<Grape, "id" | "created_at" | "updated_at" | "deleted_at"> & { id?: string };
 
-function formToRow(form: GrapeForm): Record<string, unknown> {
+function formToRow(
+  form: GrapeForm,
+): { error: string } | { row: Record<string, unknown> } {
+  const radar = {
+    radar_acidity: form.radar_acidity ?? null,
+    radar_body: form.radar_body ?? null,
+    radar_aromatic_intensity: form.radar_aromatic_intensity ?? null,
+    radar_tannins: form.radar_tannins ?? null,
+    radar_alcohol_potential: form.radar_alcohol_potential ?? null,
+  };
+  const radarError = validateGrapeRadarFields(radar);
+  if (radarError) return { error: radarError };
+  const normalizedRadar = normalizeGrapeRadarFields(radar);
+
   return {
-    slug: form.slug || null,
-    name_fr: form.name_fr || "",
-    name_en: form.name_en || null,
-    type: form.type || null,
-    origin_country: form.origin_country || null,
-    origin_region_fr: form.origin_region_fr || null,
-    origin_region_en: form.origin_region_en || null,
-    origin_latitude: form.origin_latitude ?? null,
-    origin_longitude: form.origin_longitude ?? null,
-    history_fr: form.history_fr || null,
-    history_en: form.history_en || null,
-    crossings_fr: form.crossings_fr || null,
-    crossings_en: form.crossings_en || null,
-    production_regions_fr: form.production_regions_fr || null,
-    production_regions_en: form.production_regions_en || null,
-    viticultural_traits_fr: form.viticultural_traits_fr || null,
-    viticultural_traits_en: form.viticultural_traits_en || null,
-    tasting_traits_fr: form.tasting_traits_fr || null,
-    tasting_traits_en: form.tasting_traits_en || null,
-    emblematic_wines_fr: form.emblematic_wines_fr || null,
-    emblematic_wines_en: form.emblematic_wines_en || null,
-    production_countries: normalizeProductionCountries(form.production_countries ?? []),
-    is_premium: !!form.is_premium,
-    status: form.status || "draft",
-    published_at: form.published_at || null,
+    row: {
+      slug: form.slug || null,
+      name_fr: form.name_fr || "",
+      name_en: form.name_en || null,
+      type: form.type || null,
+      origin_country: form.origin_country || null,
+      origin_region_fr: form.origin_region_fr || null,
+      origin_region_en: form.origin_region_en || null,
+      origin_latitude: form.origin_latitude ?? null,
+      origin_longitude: form.origin_longitude ?? null,
+      history_fr: form.history_fr || null,
+      history_en: form.history_en || null,
+      crossings_fr: form.crossings_fr || null,
+      crossings_en: form.crossings_en || null,
+      production_regions_fr: form.production_regions_fr || null,
+      production_regions_en: form.production_regions_en || null,
+      viticultural_traits_fr: form.viticultural_traits_fr || null,
+      viticultural_traits_en: form.viticultural_traits_en || null,
+      tasting_traits_fr: form.tasting_traits_fr || null,
+      tasting_traits_en: form.tasting_traits_en || null,
+      emblematic_wines_fr: form.emblematic_wines_fr || null,
+      emblematic_wines_en: form.emblematic_wines_en || null,
+      ...normalizedRadar,
+      production_countries: normalizeProductionCountries(form.production_countries ?? []),
+      is_premium: !!form.is_premium,
+      status: form.status || "draft",
+      published_at: form.published_at || null,
+    },
   };
 }
 
 export async function createGrape(form: GrapeForm): Promise<{ error?: string }> {
   const supabase = getSupabaseAdmin();
-  const row = formToRow(form);
-  const { error } = await supabase.from("grapes").insert(row);
+  const prepared = formToRow(form);
+  if ("error" in prepared) return { error: prepared.error };
+  const { error } = await supabase.from("grapes").insert(prepared.row);
   if (error) return { error: error.message };
   revalidatePath("/admin/grapes");
   return {};
@@ -165,8 +215,9 @@ export async function createGrape(form: GrapeForm): Promise<{ error?: string }> 
 
 export async function updateGrape(id: string, form: GrapeForm): Promise<{ error?: string }> {
   const supabase = getSupabaseAdmin();
-  const row = formToRow(form);
-  const { error } = await supabase.from("grapes").update(row).eq("id", id);
+  const prepared = formToRow(form);
+  if ("error" in prepared) return { error: prepared.error };
+  const { error } = await supabase.from("grapes").update(prepared.row).eq("id", id);
   if (error) return { error: error.message };
   revalidatePath("/admin/grapes");
   return {};
@@ -178,6 +229,127 @@ export async function deleteGrape(id: string): Promise<{ error?: string }> {
     .from("grapes")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/admin/grapes");
+  return {};
+}
+
+export async function getGrapeEmblematicAops(
+  grapeId: string,
+): Promise<GrapeEmblematicAop[]> {
+  const supabase = getSupabaseAdmin();
+  const { data: links, error: linksError } = await supabase
+    .from("grape_emblematic_aop_link")
+    .select("aop_id, sort_order")
+    .eq("grape_id", grapeId)
+    .order("sort_order", { ascending: true });
+  if (linksError) throw new Error(linksError.message);
+
+  const linkRows = (links ?? []) as Array<{
+    aop_id: number;
+    sort_order: number | null;
+  }>;
+  if (linkRows.length === 0) return [];
+
+  const aopIds = linkRows.map((row) => row.aop_id);
+  const { data: aops, error: aopsError } = await supabase
+    .from("aop")
+    .select("id, name, slug")
+    .in("id", aopIds)
+    .is("deleted_at", null);
+  if (aopsError) throw new Error(aopsError.message);
+
+  const byId = new Map(
+    ((aops ?? []) as Array<{ id: number; name: string; slug: string }>).map(
+      (aop) => [aop.id, aop] as const,
+    ),
+  );
+  const sortById = new Map(
+    linkRows.map((row) => [row.aop_id, row.sort_order ?? 0] as const),
+  );
+
+  return aopIds
+    .map((id) => {
+      const aop = byId.get(id);
+      if (!aop) return null;
+      return {
+        id: String(aop.id),
+        name: aop.name,
+        slug: aop.slug,
+        sort_order: sortById.get(id) ?? 0,
+      } satisfies GrapeEmblematicAop;
+    })
+    .filter((row): row is GrapeEmblematicAop => row != null)
+    .sort((a, b) => {
+      if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
+      return a.name.localeCompare(b.name, "fr", { sensitivity: "base" });
+    });
+}
+
+export async function searchAopsForGrapeEmblematic(
+  query: string,
+): Promise<Array<{ id: string; name: string; slug: string }>> {
+  const supabase = getSupabaseAdmin();
+  const trimmed = query.trim();
+  let q = supabase
+    .from("aop")
+    .select("id, name, slug")
+    .is("deleted_at", null)
+    .order("name", { ascending: true })
+    .limit(25);
+
+  if (trimmed) {
+    const escaped = trimmed.replaceAll(",", " ");
+    q = q.or(`name.ilike.%${escaped}%,slug.ilike.%${escaped}%`);
+  }
+
+  const { data, error } = await q;
+  if (error) throw new Error(error.message);
+
+  return ((data ?? []) as Array<{ id: number; name: string; slug: string }>).map(
+    (aop) => ({
+      id: String(aop.id),
+      name: aop.name,
+      slug: aop.slug,
+    }),
+  );
+}
+
+export async function addGrapeEmblematicAop(
+  grapeId: string,
+  aopId: string,
+  sortOrder = 0,
+): Promise<{ error?: string }> {
+  const supabase = getSupabaseAdmin();
+  const numericAopId = toNumberId(aopId);
+  if (numericAopId === null) return { error: "AOP invalide." };
+
+  const { error } = await supabase.from("grape_emblematic_aop_link").upsert(
+    {
+      grape_id: grapeId,
+      aop_id: numericAopId,
+      sort_order: sortOrder,
+    },
+    { onConflict: "grape_id,aop_id" },
+  );
+  if (error) return { error: error.message };
+  revalidatePath("/admin/grapes");
+  return {};
+}
+
+export async function removeGrapeEmblematicAop(
+  grapeId: string,
+  aopId: string,
+): Promise<{ error?: string }> {
+  const supabase = getSupabaseAdmin();
+  const numericAopId = toNumberId(aopId);
+  if (numericAopId === null) return { error: "AOP invalide." };
+
+  const { error } = await supabase
+    .from("grape_emblematic_aop_link")
+    .delete()
+    .eq("grape_id", grapeId)
+    .eq("aop_id", numericAopId);
   if (error) return { error: error.message };
   revalidatePath("/admin/grapes");
   return {};

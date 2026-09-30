@@ -8,6 +8,7 @@
 --   apps/cms/docs/DATABASE_SCHEMA.md           → pointer only
 --
 -- Last focused updates:
+--   #7 / #20 — grapes radar_* (0–8) + public.grape_emblematic_aop_link
 --   #22 / #9 — public.aop.is_dgc_parent + public.aop_dgc_link
 --   #5 / #11 / #18 — public.aop_grape_link (main vs accessory grapes)
 --   #24 — public.aop.recognition_year (year-only)
@@ -114,6 +115,50 @@ CREATE TABLE public.aop_grape_link (
 
 CREATE INDEX aop_grape_link_grape_idx ON public.aop_grape_link (grape_id);
 CREATE INDEX aop_grape_link_aop_primary_idx ON public.aop_grape_link (aop_id, is_primary);
+
+-- Issues #7 / #20: Profil du cépage radar axes on grapes (nullable 0–8).
+-- Legacy emblematic_wines_fr / emblematic_wines_en text columns remain.
+ALTER TABLE public.grapes
+  ADD COLUMN radar_acidity smallint,
+  ADD COLUMN radar_body smallint,
+  ADD COLUMN radar_aromatic_intensity smallint,
+  ADD COLUMN radar_tannins smallint,
+  ADD COLUMN radar_alcohol_potential smallint;
+
+ALTER TABLE public.grapes
+  ADD CONSTRAINT grapes_radar_acidity_range
+    CHECK (radar_acidity IS NULL OR (radar_acidity >= 0 AND radar_acidity <= 8)),
+  ADD CONSTRAINT grapes_radar_body_range
+    CHECK (radar_body IS NULL OR (radar_body >= 0 AND radar_body <= 8)),
+  ADD CONSTRAINT grapes_radar_aromatic_intensity_range
+    CHECK (
+      radar_aromatic_intensity IS NULL
+      OR (radar_aromatic_intensity >= 0 AND radar_aromatic_intensity <= 8)
+    ),
+  ADD CONSTRAINT grapes_radar_tannins_range
+    CHECK (radar_tannins IS NULL OR (radar_tannins >= 0 AND radar_tannins <= 8)),
+  ADD CONSTRAINT grapes_radar_alcohol_potential_range
+    CHECK (
+      radar_alcohol_potential IS NULL
+      OR (radar_alcohol_potential >= 0 AND radar_alcohol_potential <= 8)
+    );
+
+-- Issues #7 / #20: curated emblematic AOPs on the grape fiche (not aop_grape_link).
+CREATE TABLE public.grape_emblematic_aop_link (
+  grape_id uuid NOT NULL,
+  aop_id integer NOT NULL,
+  sort_order integer NOT NULL DEFAULT 0,
+  CONSTRAINT grape_emblematic_aop_link_pkey PRIMARY KEY (grape_id, aop_id),
+  CONSTRAINT grape_emblematic_aop_link_grape_fkey
+    FOREIGN KEY (grape_id) REFERENCES public.grapes(id) ON DELETE CASCADE,
+  CONSTRAINT grape_emblematic_aop_link_aop_fkey
+    FOREIGN KEY (aop_id) REFERENCES public.aop(id) ON DELETE CASCADE
+);
+
+CREATE INDEX grape_emblematic_aop_link_grape_idx
+  ON public.grape_emblematic_aop_link (grape_id, sort_order);
+CREATE INDEX grape_emblematic_aop_link_aop_idx
+  ON public.grape_emblematic_aop_link (aop_id);
 
 -- Issues #22 / #9: parent AOP ↔ child DGC links (children stay separate map entities).
 -- child_aop_id UNIQUE → a child cannot belong to multiple parents.

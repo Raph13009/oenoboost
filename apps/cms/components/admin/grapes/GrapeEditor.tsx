@@ -11,6 +11,9 @@ import { useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { ProductionCountriesSelect } from "@/components/admin/grapes/ProductionCountriesSelect";
+import { GrapeProfileRadarField } from "@/components/admin/grapes/GrapeProfileRadarField";
+import { EmblematicAopSelector } from "@/components/admin/grapes/EmblematicAopSelector";
+import { validateGrapeRadarFields } from "@/lib/grape-radar";
 
 const cardClass =
   "rounded-lg border border-slate-200 bg-slate-50/50 shadow-sm overflow-hidden";
@@ -26,6 +29,8 @@ const CARD_STATE_KEY = "cms-grapes-card-state";
 type CardState = {
   identity: boolean;
   origin: boolean;
+  profile: boolean;
+  emblematic: boolean;
   editorial: boolean;
   flags: boolean;
   technical: boolean;
@@ -35,6 +40,8 @@ type CardState = {
 const defaultCardState: CardState = {
   identity: true,
   origin: true,
+  profile: true,
+  emblematic: true,
   editorial: true,
   flags: true,
   technical: false,
@@ -50,6 +57,8 @@ function loadCardState(): CardState {
     return {
       identity: parsed.identity ?? defaultCardState.identity,
       origin: parsed.origin ?? defaultCardState.origin,
+      profile: parsed.profile ?? defaultCardState.profile,
+      emblematic: parsed.emblematic ?? defaultCardState.emblematic,
       editorial: parsed.editorial ?? defaultCardState.editorial,
       flags: parsed.flags ?? defaultCardState.flags,
       technical: false,
@@ -190,6 +199,11 @@ const emptyForm = (): Grape => ({
   tasting_traits_en: null,
   emblematic_wines_fr: null,
   emblematic_wines_en: null,
+  radar_acidity: null,
+  radar_body: null,
+  radar_aromatic_intensity: null,
+  radar_tannins: null,
+  radar_alcohol_potential: null,
   production_countries: null,
   is_premium: false,
   status: "draft",
@@ -237,6 +251,17 @@ export function GrapeEditor({ grape, onClose, onDeleted }: Props) {
       setError("Le type est obligatoire : choisissez Rouge, Blanc ou Rosé.");
       return;
     }
+    const radarError = validateGrapeRadarFields({
+      radar_acidity: form.radar_acidity,
+      radar_body: form.radar_body,
+      radar_aromatic_intensity: form.radar_aromatic_intensity,
+      radar_tannins: form.radar_tannins,
+      radar_alcohol_potential: form.radar_alcohol_potential,
+    });
+    if (radarError) {
+      setError(radarError);
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -260,6 +285,11 @@ export function GrapeEditor({ grape, onClose, onDeleted }: Props) {
         tasting_traits_en: form.tasting_traits_en || null,
         emblematic_wines_fr: form.emblematic_wines_fr || null,
         emblematic_wines_en: form.emblematic_wines_en || null,
+        radar_acidity: form.radar_acidity ?? null,
+        radar_body: form.radar_body ?? null,
+        radar_aromatic_intensity: form.radar_aromatic_intensity ?? null,
+        radar_tannins: form.radar_tannins ?? null,
+        radar_alcohol_potential: form.radar_alcohol_potential ?? null,
         production_countries: form.production_countries ?? null,
         is_premium: !!form.is_premium,
         status: form.status || "draft",
@@ -449,6 +479,35 @@ export function GrapeEditor({ grape, onClose, onDeleted }: Props) {
           </div>
         </CollapsibleCard>
 
+        <CollapsibleCard
+          title="Profil du cépage"
+          open={cardState.profile}
+          onToggle={() => toggleCard("profile")}
+        >
+          <GrapeProfileRadarField
+            value={{
+              radar_acidity: form.radar_acidity,
+              radar_body: form.radar_body,
+              radar_aromatic_intensity: form.radar_aromatic_intensity,
+              radar_tannins: form.radar_tannins,
+              radar_alcohol_potential: form.radar_alcohol_potential,
+            }}
+            onChange={(next) => update(next)}
+            disabled={saving}
+          />
+        </CollapsibleCard>
+
+        <CollapsibleCard
+          title="AOP emblématiques"
+          open={cardState.emblematic}
+          onToggle={() => toggleCard("emblematic")}
+        >
+          <EmblematicAopSelector
+            grapeId={isNew ? null : form.id}
+            onError={setError}
+          />
+        </CollapsibleCard>
+
         <CollapsibleCard title="Éditorial" open={cardState.editorial} onToggle={() => toggleCard("editorial")}>
           <div className={fieldSpacing}>
             <div className="grid grid-cols-1 gap-x-3 gap-y-2.5 sm:grid-cols-2">
@@ -493,11 +552,15 @@ export function GrapeEditor({ grape, onClose, onDeleted }: Props) {
                 <AutoResizeTextarea value={form.tasting_traits_en ?? ""} onChange={(e) => update({ tasting_traits_en: e.target.value || null })} minRows={2} className={textareaClass} />
               </div>
               <div>
-                <label className={labelClass}>Vins emblématiques (FR)</label>
+                <label className={labelClass}>
+                  Vins emblématiques — texte legacy (FR)
+                </label>
                 <AutoResizeTextarea value={form.emblematic_wines_fr ?? ""} onChange={(e) => update({ emblematic_wines_fr: e.target.value || null })} minRows={2} className={textareaClass} />
               </div>
               <div>
-                <label className={labelClass}>Vins emblématiques (EN)</label>
+                <label className={labelClass}>
+                  Vins emblématiques — texte legacy (EN)
+                </label>
                 <AutoResizeTextarea value={form.emblematic_wines_en ?? ""} onChange={(e) => update({ emblematic_wines_en: e.target.value || null })} minRows={2} className={textareaClass} />
               </div>
             </div>

@@ -138,6 +138,12 @@ export type Grape = {
   tasting_traits_en: string | null;
   emblematic_wines_fr: string | null;
   emblematic_wines_en: string | null;
+  /** Profil du cépage axes (0–8). Null when unset. */
+  radar_acidity: number | null;
+  radar_body: number | null;
+  radar_aromatic_intensity: number | null;
+  radar_tannins: number | null;
+  radar_alcohol_potential: number | null;
   is_premium: boolean;
   status: string;
   published_at: string | null;

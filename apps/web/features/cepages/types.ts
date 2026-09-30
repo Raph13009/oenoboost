@@ -8,3 +8,12 @@ export type RelatedGrape = {
   /** true = main/classic ; false = accessory */
   is_primary: boolean;
 };
+
+/** Emblematic AOP chip target on the grape fiche. */
+export type EmblematicAop = {
+  id: number;
+  slug: string;
+  name: string;
+  region_slug: string;
+  subregion_slug: string;
+};
