@@ -366,6 +366,7 @@ const fr = {
     backToRegion: "Retour à la région",
     subregionsLayer: "Sous-régions",
     aopLayer: "AOP",
+    mapGrandCruLegend: "Grand Cru",
     mapGrapesLabel: "Cépages",
     mapOpenAopDetail: "Voir la fiche AOP",
     backToMap: "Retour à la carte",

@@ -40,7 +40,7 @@ CREATE TABLE public.aop (
   created_at timestamp without time zone DEFAULT now(),
   updated_at timestamp without time zone DEFAULT now(),
   deleted_at timestamp without time zone,
-  is_grand_cru boolean NOT NULL DEFAULT false,
+  is_grand_cru boolean NOT NULL DEFAULT false, -- exposed by get_aop_communes_geojson (map Grand Cru markers, issue #6)
   wine_pct_red smallint,
   wine_pct_white smallint,
   wine_pct_sparkling smallint,

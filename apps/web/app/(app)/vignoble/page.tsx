@@ -52,6 +52,7 @@ export default async function VignoblePage({
             backToRegion: dict.vignoble.backToRegion,
             subregionsLayer: dict.vignoble.subregionsLayer,
             aopLayer: dict.vignoble.aopLayer,
+            grandCruLegend: dict.vignoble.mapGrandCruLegend,
             departmentsLabel: dict.vignoble.departmentCount,
             hectaresLabel: dict.vignoble.hectares,
             totalProductionLabel: dict.vignoble.totalProduction,

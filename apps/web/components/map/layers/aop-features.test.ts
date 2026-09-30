@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildAopFeatures,
+  buildGrandCruPointFeatures,
   pickSmallestFeature,
   type AopInput,
 } from "./aop-features";
@@ -130,6 +131,71 @@ describe("buildAopFeatures", () => {
       "medium",
       "small-null",
     ]);
+  });
+
+  it("propagates is_grand_cru onto feature properties", () => {
+    const out = buildAopFeatures([
+      {
+        aop_id: 1,
+        aop_name: "cru",
+        geometry: square(0, 45, 0.2),
+        is_grand_cru: true,
+      },
+      {
+        aop_id: 2,
+        aop_name: "plain",
+        geometry: square(1, 45, 0.2),
+        is_grand_cru: false,
+      },
+    ]);
+    expect(out.find((f) => f.id === 1)?.properties.is_grand_cru).toBe(true);
+    expect(out.find((f) => f.id === 2)?.properties.is_grand_cru).toBe(false);
+  });
+});
+
+describe("buildGrandCruPointFeatures", () => {
+  it("emits centroid points only for Grand Cru AOPs", () => {
+    const features = buildAopFeatures([
+      {
+        aop_id: 10,
+        aop_name: "Clos Foo",
+        geometry: square(4, 47, 0.2),
+        is_grand_cru: true,
+      },
+      {
+        aop_id: 11,
+        aop_name: "Village Bar",
+        geometry: square(5, 47, 0.2),
+        is_grand_cru: false,
+      },
+      {
+        aop_id: 12,
+        aop_name: "Clos Baz",
+        geometry: square(6, 47, 0.1),
+        is_grand_cru: true,
+      },
+    ]);
+
+    const points = buildGrandCruPointFeatures(features);
+    expect(points).toHaveLength(2);
+    expect(points.map((p) => p.id).sort()).toEqual([10, 12]);
+    for (const point of points) {
+      expect(point.geometry.type).toBe("Point");
+      expect(point.properties.is_grand_cru).toBe(true);
+      expect(point.geometry.coordinates).toHaveLength(2);
+    }
+  });
+
+  it("returns an empty list when no Grand Cru is present", () => {
+    const features = buildAopFeatures([
+      {
+        aop_id: 1,
+        aop_name: "plain",
+        geometry: square(0, 45, 0.2),
+        is_grand_cru: false,
+      },
+    ]);
+    expect(buildGrandCruPointFeatures(features)).toEqual([]);
   });
 });
 

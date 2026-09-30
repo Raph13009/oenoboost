@@ -367,6 +367,7 @@ const en: Dictionary = {
     backToRegion: "Back to region",
     subregionsLayer: "Subregions",
     aopLayer: "AOP",
+    mapGrandCruLegend: "Grand Cru",
     mapGrapesLabel: "Grape varieties",
     mapOpenAopDetail: "Open AOP page",
     backToMap: "Back to map",

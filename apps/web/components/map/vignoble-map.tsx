@@ -27,6 +27,7 @@ import { MapLoadingOverlay } from "./panels/map-loading-overlay";
 import { RegionDetailCard } from "./panels/region-detail-card";
 import { SubregionDetailPanel } from "./panels/subregion-detail-panel";
 import { SubregionLegend } from "./panels/subregion-legend";
+import { AopGrandCruLegend } from "./panels/aop-grand-cru-legend";
 import type {
   VignobleMapLocale,
   VignobleMapRegion,
@@ -503,6 +504,8 @@ export function VignobleMap({
   const showBottomPanel = subregionsMode && (!aopOnly || Boolean(selectedAop) || showAopList);
   const showDesktopLegendOverlay =
     subregionsMode && !aopOnly && layerMode === "subregions";
+  const showGrandCruLegend =
+    subregionsMode && layerMode === "aop" && aop.hasGrandCruMarkers;
   const aopListFilterLabel =
     selectedSubregion && layerMode === "aop" ? selectedSubregion.name : null;
   const aopListClearLabel = locale === "en" ? "Show all" : "Tout afficher";
@@ -582,6 +585,14 @@ export function VignobleMap({
                   if (b) camera.fitToBounds(b, { padding: 26, maxZoom: 9.2 });
                 }}
               />
+            </div>
+          </div>
+        )}
+
+        {showGrandCruLegend && (
+          <div className="pointer-events-none absolute left-3 bottom-3 z-10 md:bottom-12">
+            <div className="pointer-events-auto">
+              <AopGrandCruLegend label={strings.grandCruLegend} />
             </div>
           </div>
         )}

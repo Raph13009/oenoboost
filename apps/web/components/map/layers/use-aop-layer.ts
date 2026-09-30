@@ -9,9 +9,15 @@ import { computeMultiPolygonBounds, unionBounds } from "../geo/geometry";
 import type { Bounds } from "../geo/geometry";
 import { raisePlaceLabelsToTop } from "../map-label-utils";
 import type { AopFeature } from "./aop-features";
-import { buildAopFeatures, pickSmallestFeature } from "./aop-features";
+import {
+  buildAopFeatures,
+  buildGrandCruPointFeatures,
+  pickSmallestFeature,
+} from "./aop-features";
 import {
   aopFillLayerId,
+  aopGrandCruCircleLayerId,
+  aopGrandCruSourceId,
   aopOutlineLayerId,
   aopSourceId,
   subOutlineLayerId,
@@ -35,6 +41,8 @@ type UseAopLayerResult = {
   loading: boolean;
   /** Sorted-alphabetically list of loaded AOPs — populated after show(), cleared on hide(). */
   aopItems: AopListItem[];
+  /** True when at least one Grand Cru marker is on the map (issue #6). */
+  hasGrandCruMarkers: boolean;
   /** Fetch AOPs for the given bbox (optionally scoped to a region) and render them.
    *  Re-entrant: replaces any existing layer. */
   show: (bbox: Bounds, regionId?: string) => Promise<void>;
@@ -70,6 +78,7 @@ export function useAopLayer(
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [aopItems, setAopItems] = useState<AopListItem[]>([]);
+  const [hasGrandCruMarkers, setHasGrandCruMarkers] = useState(false);
 
   const cleanupRef = useRef<(() => void) | null>(null);
   const featuresRef = useRef<AopFeature[]>([]);
@@ -93,6 +102,7 @@ export function useAopLayer(
     runCleanup();
     setVisible(false);
     setAopItems([]);
+    setHasGrandCruMarkers(false);
     featuresRef.current = [];
     selectedAopIdsRef.current = [];
   }, [runCleanup]);
@@ -174,6 +184,9 @@ export function useAopLayer(
             .sort((a, b) => a.name.localeCompare(b.name)),
         );
 
+        const grandCruPoints = buildGrandCruPointFeatures(features);
+        setHasGrandCruMarkers(grandCruPoints.length > 0);
+
         if (features.length > 0) {
           map.addSource(aopSourceId, {
             type: "geojson",
@@ -200,9 +213,31 @@ export function useAopLayer(
             },
           });
 
-          // Keep subregion outlines above AOP fills.
+          if (grandCruPoints.length > 0) {
+            map.addSource(aopGrandCruSourceId, {
+              type: "geojson",
+              data: { type: "FeatureCollection", features: grandCruPoints },
+            });
+            map.addLayer({
+              id: aopGrandCruCircleLayerId,
+              type: "circle",
+              source: aopGrandCruSourceId,
+              paint: {
+                "circle-radius": 5.5,
+                "circle-color": "#c41e3a",
+                "circle-stroke-width": 1.5,
+                "circle-stroke-color": "#ffffff",
+                "circle-opacity": 0.95,
+              },
+            });
+          }
+
+          // Keep subregion outlines above AOP fills (markers stay on top).
           if (map.getLayer(subOutlineLayerId)) {
             map.moveLayer(subOutlineLayerId);
+          }
+          if (map.getLayer(aopGrandCruCircleLayerId)) {
+            map.moveLayer(aopGrandCruCircleLayerId);
           }
 
           raisePlaceLabelsToTop(map);
@@ -238,15 +273,36 @@ export function useAopLayer(
           }
         };
 
-        const onPointerMove = (e: any) => {
-          const feats = map.queryRenderedFeatures(e.point, {
+        const resolveAopHit = (point: unknown) => {
+          // Grand Cru markers sit above fills and win hit-testing (issue #6).
+          if (map.getLayer(aopGrandCruCircleLayerId)) {
+            const cruFeats = map.queryRenderedFeatures(point, {
+              layers: [aopGrandCruCircleLayerId],
+            }) as any[];
+            const cru = cruFeats[0];
+            if (cru) {
+              const aopId = Number(cru.id ?? cru.properties?.aop_id);
+              const aopName = cru.properties?.aop_name as string | undefined;
+              if (Number.isFinite(aopId) && aopName) {
+                return { aopId, aopName };
+              }
+            }
+          }
+          if (!map.getLayer(aopFillLayerId)) return null;
+          const feats = map.queryRenderedFeatures(point, {
             layers: [aopFillLayerId],
           }) as any[];
-          // Pick the smallest AOP under the cursor rather than the topmost
-          // rendered feature. This keeps hover aligned with user intent even
-          // if rendering order ever drifts from area-descending.
           const feature = pickSmallestFeature(feats);
-          if (!feature) {
+          if (!feature) return null;
+          const aopId = feature.id as number | undefined;
+          const aopName = feature.properties?.aop_name as string | undefined;
+          if (aopId == null || !aopName) return null;
+          return { aopId, aopName };
+        };
+
+        const onPointerMove = (e: any) => {
+          const hit = resolveAopHit(e.point);
+          if (!hit) {
             if (hoveredAopId !== null) {
               hoveredAopId = null;
               resetHoverPaint();
@@ -256,10 +312,9 @@ export function useAopLayer(
             return;
           }
 
-          const newAopId = feature.id as number | undefined;
-          const aopName = feature.properties?.aop_name as string | undefined;
+          const { aopId: newAopId, aopName } = hit;
 
-          if (newAopId != null && newAopId !== hoveredAopId) {
+          if (newAopId !== hoveredAopId) {
             hoveredAopId = newAopId;
             if (map.getLayer(aopFillLayerId)) {
               map.setPaintProperty(aopFillLayerId, "fill-opacity", [
@@ -310,26 +365,20 @@ export function useAopLayer(
         };
 
         const onClick = (e: any) => {
-          const feats = map.queryRenderedFeatures(e.point, {
-            layers: [aopFillLayerId],
-          }) as any[];
-          const feature = pickSmallestFeature(feats);
-          if (!feature) return;
-          const aopId = feature.id as number | undefined;
-          const aopName = feature.properties?.aop_name as string | undefined;
-          if (aopId == null || !aopName) return;
-          onClickAopRef.current?.({ aopId, aopName });
+          const hit = resolveAopHit(e.point);
+          if (!hit) return;
+          onClickAopRef.current?.(hit);
         };
 
         map.on("mousemove", onPointerMove);
         map.on("mouseout", onPointerLeave);
-        map.on("click", aopFillLayerId, onClick);
+        map.on("click", onClick);
 
         cleanupRef.current = () => {
           try {
             map.off("mousemove", onPointerMove);
             map.off("mouseout", onPointerLeave);
-            map.off("click", aopFillLayerId, onClick);
+            map.off("click", onClick);
           } catch {
             /* ignore */
           }
@@ -339,6 +388,12 @@ export function useAopLayer(
             /* ignore */
           }
           try {
+            if (map.getLayer(aopGrandCruCircleLayerId)) {
+              map.removeLayer(aopGrandCruCircleLayerId);
+            }
+            if (map.getSource(aopGrandCruSourceId)) {
+              map.removeSource(aopGrandCruSourceId);
+            }
             if (map.getLayer(aopOutlineLayerId)) {
               map.removeLayer(aopOutlineLayerId);
             }
@@ -383,6 +438,7 @@ export function useAopLayer(
     visible,
     loading,
     aopItems,
+    hasGrandCruMarkers,
     show,
     hide,
     toggle,
