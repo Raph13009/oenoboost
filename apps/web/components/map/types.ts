@@ -35,6 +35,11 @@ export type VignobleMapStrings = {
   grapesLabel: string;
   mainGrapesLabel?: string;
   accessoryGrapesLabel?: string;
+  wineColorWhite?: string;
+  wineColorRed?: string;
+  wineColorRose?: string;
+  wineColorSparkling?: string;
+  wineColorLiqueur?: string;
   dgcChildrenLabel?: string;
   historyTimelineTitle: string;
   historyTimelineHint: string;

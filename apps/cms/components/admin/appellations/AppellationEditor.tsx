@@ -465,11 +465,12 @@ function SoilLinkSelector({
 }
 
 /**
- * Controlled commune picker for an AOP. The dropdown lists communes belonging
- * to the AOP's wine region (via `communes_full_subregion_link`) and matches
- * the query as a normalized substring (lowercased, accents stripped, dashes /
- * spaces ignored — "tetien" matches "Saint-Étienne"). The selection is held
- * in parent state and persisted on save via `setAppellationCommuneLinks`, so
+ * Controlled commune picker for an AOP. The dropdown lists communes in the
+ * administrative departments of the AOP's wine region (via
+ * `wine_region_departements` / INSEE prefix) and matches the query as a
+ * normalized substring (lowercased, accents stripped, dashes / spaces
+ * ignored — "tetien" matches "Saint-Étienne"). The selection is held in
+ * parent state and persisted on save via `setAppellationCommuneLinks`, so
  * communes can be picked before the AOP is first saved.
  */
 function CommuneLinkSelector({
@@ -1390,7 +1391,17 @@ export function AppellationEditor({
           open={cardState.grapes}
           onToggle={() => toggleCard("grapes")}
         >
-          <GrapeLinkSelector appellationId={isNew ? null : form.id} onError={setError} />
+          <GrapeLinkSelector
+            appellationId={isNew ? null : form.id}
+            winePct={{
+              wine_pct_red: form.wine_pct_red,
+              wine_pct_rose: form.wine_pct_rose,
+              wine_pct_white: form.wine_pct_white,
+              wine_pct_sparkling: form.wine_pct_sparkling,
+              wine_pct_liqueur: form.wine_pct_liqueur,
+            }}
+            onError={setError}
+          />
         </CollapsibleCard>
 
         <CollapsibleCard title="Climat" open={cardState.climate} onToggle={() => toggleCard("climate")}>

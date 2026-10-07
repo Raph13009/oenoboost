@@ -10,7 +10,7 @@ import {
 
 export type AopMapGrape = Pick<
   RelatedGrape,
-  "id" | "slug" | "name_fr" | "is_primary"
+  "id" | "slug" | "name_fr" | "is_primary" | "wine_color"
 >;
 
 export type AopMapDgcChild = {
@@ -26,6 +26,11 @@ export type AopMapInfo = {
   area_hectares: number | null;
   is_grand_cru: boolean;
   grapes: AopMapGrape[];
+  wine_pct_red: number | null;
+  wine_pct_rose: number | null;
+  wine_pct_white: number | null;
+  wine_pct_sparkling: number | null;
+  wine_pct_liqueur: number | null;
   /** Region used for the "open fiche" href (parent when linked). */
   region_slug: string | null;
   subregion_slug: string | null;
@@ -64,7 +69,9 @@ export async function getAopMapInfo(aopId: number): Promise<AopMapInfo | null> {
 
   const { data: aop, error: aopError } = await supabase
     .from("aop")
-    .select("id, slug, name, area_hectares, is_grand_cru")
+    .select(
+      "id, slug, name, area_hectares, is_grand_cru, wine_pct_red, wine_pct_rose, wine_pct_white, wine_pct_sparkling, wine_pct_liqueur",
+    )
     .eq("id", aopId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -98,6 +105,7 @@ export async function getAopMapInfo(aopId: number): Promise<AopMapInfo | null> {
     slug: g.slug,
     name_fr: g.name_fr,
     is_primary: g.is_primary,
+    wine_color: g.wine_color,
   }));
 
   const dgcParent = await getDgcParentForChild(aopId);
@@ -114,6 +122,11 @@ export async function getAopMapInfo(aopId: number): Promise<AopMapInfo | null> {
     area_hectares: (aop.area_hectares ?? null) as number | null,
     is_grand_cru: Boolean(aop.is_grand_cru),
     grapes,
+    wine_pct_red: (aop.wine_pct_red ?? null) as number | null,
+    wine_pct_rose: (aop.wine_pct_rose ?? null) as number | null,
+    wine_pct_white: (aop.wine_pct_white ?? null) as number | null,
+    wine_pct_sparkling: (aop.wine_pct_sparkling ?? null) as number | null,
+    wine_pct_liqueur: (aop.wine_pct_liqueur ?? null) as number | null,
     region_slug: isChild
       ? (dgcParent?.region_slug ?? region?.slug ?? null)
       : (region?.slug ?? null),

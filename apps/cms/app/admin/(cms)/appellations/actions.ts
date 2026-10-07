@@ -10,6 +10,10 @@ import {
 import { slugifyAopSlug } from "@/lib/aop-slug";
 import { validateRecognitionYear } from "@/lib/aop-recognition-year";
 import { validateWineColorBreakdown } from "@/lib/aop-wine-color-breakdown";
+import {
+  isGrapeWineColor,
+  type GrapeWineColor,
+} from "@/lib/aop-grape-colors";
 
 /**
  * Type representing a row of the new `aop` table (int4 ids).
@@ -80,6 +84,8 @@ export type AppellationLinkedGrape = {
   slug: string;
   /** true = cépage principal / classique ; false = accessoire */
   is_primary: boolean;
+  /** null = pas encore classé */
+  wine_color: GrapeWineColor | null;
 };
 
 export type AppellationDgcChild = {
@@ -821,6 +827,7 @@ export async function getAppellationGrapeLinkItems(
     .select(
       `
       is_primary,
+      wine_color,
       grape_id,
       grapes!grape_id(
         id,
@@ -838,11 +845,13 @@ export async function getAppellationGrapeLinkItems(
         (row as { grapes: LinkedGrapeRow | LinkedGrapeRow[] | null }).grapes
       );
       if (!grape?.id || !grape.name_fr || !grape.slug) return null;
+      const wineColorRaw = (row as { wine_color: string | null }).wine_color;
       return {
         id: grape.id,
         name_fr: grape.name_fr,
         slug: grape.slug,
         is_primary: Boolean((row as { is_primary: boolean }).is_primary),
+        wine_color: isGrapeWineColor(wineColorRaw) ? wineColorRaw : null,
       };
     })
     .filter((row): row is AppellationLinkedGrape => row !== null);
@@ -855,7 +864,7 @@ export async function getAppellationGrapeLinkItems(
 
 export async function searchGrapesForAppellationLinks(
   query: string
-): Promise<Omit<AppellationLinkedGrape, "is_primary">[]> {
+): Promise<Omit<AppellationLinkedGrape, "is_primary" | "wine_color">[]> {
   const supabase = getSupabaseAdmin();
   const trimmed = query.trim();
 
@@ -886,19 +895,41 @@ export async function searchGrapesForAppellationLinks(
 export async function addAppellationGrapeLink(
   appellationId: string,
   grapeId: string,
-  isPrimary = true
+  isPrimary: boolean,
+  wineColor: GrapeWineColor
 ): Promise<{ error?: string }> {
   const aopId = toNumberId(appellationId);
   if (aopId === null) return { error: "Identifiant AOP invalide." };
+  if (!isGrapeWineColor(wineColor)) return { error: "Couleur de vin invalide." };
   const supabase = getSupabaseAdmin();
   const { error } = await supabase.from("aop_grape_link").upsert(
     {
       aop_id: aopId,
       grape_id: grapeId,
       is_primary: isPrimary,
+      wine_color: wineColor,
     },
     { onConflict: "aop_id,grape_id" }
   );
+  if (error) return { error: error.message };
+  revalidatePath("/admin/appellations");
+  return {};
+}
+
+export async function setAppellationGrapeLinkColor(
+  appellationId: string,
+  grapeId: string,
+  wineColor: GrapeWineColor
+): Promise<{ error?: string }> {
+  const aopId = toNumberId(appellationId);
+  if (aopId === null) return { error: "Identifiant AOP invalide." };
+  if (!isGrapeWineColor(wineColor)) return { error: "Couleur de vin invalide." };
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase
+    .from("aop_grape_link")
+    .update({ wine_color: wineColor })
+    .eq("aop_id", aopId)
+    .eq("grape_id", grapeId);
   if (error) return { error: error.message };
   revalidatePath("/admin/appellations");
   return {};
@@ -1251,10 +1282,11 @@ export async function getAppellationCommunes(
 }
 
 /**
- * Substring search over `communes_full` scoped to a wine region. Both query
- * and name are normalized (lowercase, accents stripped, non-alphanumerics
- * removed) before a `like '%q%'` match, so "tetien" matches "Saint-Étienne".
- * Backed by the `search_communes_full` Postgres RPC (see
+ * Substring search over `communes_full` scoped to a wine region's departments
+ * (`wine_region_departements` → INSEE prefix). Both query and name are
+ * normalized (lowercase, accents stripped, non-alphanumerics removed) before
+ * a `like '%q%'` match, so "tetien" matches "Saint-Étienne". Backed by the
+ * `search_communes_full` Postgres RPC (see
  * `docs/sql/create_search_communes_full_rpc.sql`).
  */
 export async function searchCommunesFull(

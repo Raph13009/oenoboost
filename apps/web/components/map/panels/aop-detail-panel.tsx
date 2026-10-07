@@ -9,6 +9,10 @@ import type {
   VignobleMapStrings,
 } from "@/components/map/types";
 import { buildAopDetailHref } from "@/features/vignoble/lib/aop-slug";
+import {
+  groupPublicGrapesByColor,
+  producedGrapeColors,
+} from "@/features/vignoble/lib/grape-color-groups";
 import type {
   AopMapDgcChild,
   AopMapGrape,
@@ -24,6 +28,11 @@ export type AopPanelInfo = {
   fiche_slug: string | null;
   dgc_slug: string | null;
   grapes: AopMapGrape[];
+  wine_pct_red: number | null;
+  wine_pct_rose: number | null;
+  wine_pct_white: number | null;
+  wine_pct_sparkling: number | null;
+  wine_pct_liqueur: number | null;
   dgc_children: AopMapDgcChild[];
 };
 
@@ -68,9 +77,18 @@ export function AopDetailPanel({
   strings,
   onBack,
 }: AopDetailPanelProps) {
-  const mainGrapes = aop.grapes.filter((g) => g.is_primary);
-  const accessoryGrapes = aop.grapes.filter((g) => !g.is_primary);
-  const hasGrapeChips = mainGrapes.length > 0 || accessoryGrapes.length > 0;
+  const grapeGroups = groupPublicGrapesByColor(
+    aop.grapes,
+    producedGrapeColors(aop),
+  );
+  const hasGrapeChips = grapeGroups.length > 0;
+  const colorLabels = {
+    white: strings.wineColorWhite ?? "Vin blanc",
+    red: strings.wineColorRed ?? "Vin rouge",
+    rose: strings.wineColorRose ?? "Vin rosé",
+    sparkling: strings.wineColorSparkling ?? "Vin effervescent",
+    liqueur: strings.wineColorLiqueur ?? "Vin liquoreux",
+  };
 
   const detailHref =
     aop.region_slug && aop.fiche_slug
@@ -120,16 +138,23 @@ export function AopDetailPanel({
             </div>
           </>
         ) : hasGrapeChips ? (
-          <>
-            <GrapeChips
-              title={strings.mainGrapesLabel ?? strings.grapesLabel}
-              grapes={mainGrapes}
-            />
-            <GrapeChips
-              title={strings.accessoryGrapesLabel ?? strings.grapesLabel}
-              grapes={accessoryGrapes}
-            />
-          </>
+          <div className="mt-3 flex flex-col gap-3">
+            {grapeGroups.map((group) => (
+              <div key={group.color}>
+                <div className="text-xs font-medium text-foreground">
+                  {colorLabels[group.color]}
+                </div>
+                <GrapeChips
+                  title={strings.mainGrapesLabel ?? strings.grapesLabel}
+                  grapes={group.main}
+                />
+                <GrapeChips
+                  title={strings.accessoryGrapesLabel ?? strings.grapesLabel}
+                  grapes={group.accessory}
+                />
+              </div>
+            ))}
+          </div>
         ) : (
           <>
             <div className="mt-3 text-xs text-muted-foreground">

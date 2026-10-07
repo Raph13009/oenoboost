@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { isGrapeWineColor } from "@/features/vignoble/lib/grape-color-groups";
 import type { EmblematicAop, Grape, RelatedGrape } from "../types";
 
 const GRAPE_COLUMNS =
@@ -55,7 +56,7 @@ export async function getGrapesCount() {
 
 /**
  * Structured AOP ↔ grape links (`aop_grape_link`).
- * Main/classic first (`is_primary`), then accessory, then name.
+ * Callers group by `wine_color`, then main/classic (`is_primary`) vs accessory.
  */
 export async function getRelatedGrapesForAppellation(
   appellationId: number,
@@ -63,7 +64,7 @@ export async function getRelatedGrapesForAppellation(
   const supabase = await createClient();
   const { data: links, error: linksError } = await supabase
     .from("aop_grape_link")
-    .select("grape_id, is_primary")
+    .select("grape_id, is_primary, wine_color")
     .eq("aop_id", appellationId);
 
   if (linksError) {
@@ -73,6 +74,7 @@ export async function getRelatedGrapesForAppellation(
   const linkRows = (links ?? []) as {
     grape_id: string | null;
     is_primary: boolean | null;
+    wine_color: string | null;
   }[];
 
   const grapeIds = Array.from(
@@ -87,12 +89,12 @@ export async function getRelatedGrapesForAppellation(
     return [];
   }
 
-  const primaryById = new Map(
+  const linkById = new Map(
     linkRows
-      .filter((row): row is { grape_id: string; is_primary: boolean | null } =>
+      .filter((row): row is { grape_id: string; is_primary: boolean | null; wine_color: string | null } =>
         Boolean(row.grape_id),
       )
-      .map((row) => [row.grape_id, Boolean(row.is_primary)] as const),
+      .map((row) => [row.grape_id, row] as const),
   );
 
   const { data, error } = await supabase
@@ -105,15 +107,17 @@ export async function getRelatedGrapesForAppellation(
     throw new Error(`Failed to fetch related grapes: ${error.message}`);
   }
 
-  return ((data ?? []) as Omit<RelatedGrape, "is_primary">[])
-    .map((grape) => ({
-      ...grape,
-      is_primary: primaryById.get(grape.id) ?? true,
-    }))
-    .sort((a, b) => {
-      if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
-      return a.name_fr.localeCompare(b.name_fr, "fr", { sensitivity: "base" });
-    });
+  return ((data ?? []) as Omit<RelatedGrape, "is_primary" | "wine_color">[])
+    .map((grape) => {
+      const link = linkById.get(grape.id);
+      const wineColor = link?.wine_color;
+      return {
+        ...grape,
+        is_primary: link ? Boolean(link.is_primary) : true,
+        wine_color: isGrapeWineColor(wineColor) ? wineColor : null,
+      };
+    })
+    .sort((a, b) => a.name_fr.localeCompare(b.name_fr, "fr", { sensitivity: "base" }));
 }
 
 /**
