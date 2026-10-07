@@ -8,55 +8,72 @@ import {
   getAppellationGrapeLinkItems,
   removeAppellationGrapeLink,
   searchGrapesForAppellationLinks,
+  setAppellationGrapeLinkColor,
   setAppellationGrapeLinkRole,
 } from "@/app/admin/(cms)/appellations/actions";
+import {
+  isGrapeWineColor,
+  producedGrapeColors,
+  type GrapeWineColor,
+} from "@/lib/aop-grape-colors";
+import {
+  WINE_COLOR_LABELS,
+  type WineColorBreakdown,
+} from "@/lib/aop-wine-color-breakdown";
 
 const labelClass = "block text-[11px] text-slate-500 mb-0.5";
 const inputClass =
   "h-8 w-full rounded border border-slate-200 bg-white px-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-200";
 
+type SearchGrape = Omit<AppellationLinkedGrape, "is_primary" | "wine_color">;
+
 type Props = {
   appellationId: string | null;
+  winePct: WineColorBreakdown;
   onError: (message: string | null) => void;
 };
 
-export function GrapeLinkSelector({ appellationId, onError }: Props) {
+export function GrapeLinkSelector({ appellationId, winePct, onError }: Props) {
   const [selected, setSelected] = useState<AppellationLinkedGrape[]>([]);
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<Omit<AppellationLinkedGrape, "is_primary">[]>([]);
+  const [results, setResults] = useState<SearchGrape[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [activeColor, setActiveColor] = useState<GrapeWineColor | null>(null);
   const [dropdownRect, setDropdownRect] = useState<{
     top: number;
     left: number;
     width: number;
   } | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRefs = useRef<Partial<Record<GrapeWineColor, HTMLInputElement | null>>>({});
   const panelRef = useRef<HTMLDivElement>(null);
   const requestIdRef = useRef(0);
 
+  const producedColors = useMemo(() => producedGrapeColors(winePct), [winePct]);
+  const producedSet = useMemo(() => new Set(producedColors), [producedColors]);
+
   const sortGrapes = useCallback((items: AppellationLinkedGrape[]) => {
-    return [...items].sort((a, b) => {
-      if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
-      return a.name_fr.localeCompare(b.name_fr, "fr", { sensitivity: "base" });
-    });
+    return [...items].sort((a, b) =>
+      a.name_fr.localeCompare(b.name_fr, "fr", { sensitivity: "base" })
+    );
   }, []);
 
   const syncDropdownPosition = useCallback(() => {
-    if (!rootRef.current) {
+    const input = activeColor ? inputRefs.current[activeColor] : null;
+    if (!input) {
       setDropdownRect(null);
       return;
     }
-    const rect = rootRef.current.getBoundingClientRect();
+    const rect = input.getBoundingClientRect();
     setDropdownRect({
       top: rect.bottom + 6,
       left: rect.left,
       width: rect.width,
     });
-  }, []);
+  }, [activeColor]);
 
   useEffect(() => {
     setSelected([]);
@@ -64,6 +81,7 @@ export function GrapeLinkSelector({ appellationId, onError }: Props) {
     setResults([]);
     setOpen(false);
     setActiveIndex(0);
+    setActiveColor(null);
     if (!appellationId) return;
 
     let active = true;
@@ -151,19 +169,28 @@ export function GrapeLinkSelector({ appellationId, onError }: Props) {
   }, [activeIndex, visibleResults.length]);
 
   const handleAdd = useCallback(
-    async (grape: Omit<AppellationLinkedGrape, "is_primary">, isPrimary: boolean) => {
+    async (grape: SearchGrape, isPrimary: boolean, wineColor: GrapeWineColor) => {
       if (!appellationId) return;
       if (selected.some((item) => item.id === grape.id)) return;
 
       onError(null);
       setBusyId(grape.id);
-      const nextItem: AppellationLinkedGrape = { ...grape, is_primary: isPrimary };
+      const nextItem: AppellationLinkedGrape = {
+        ...grape,
+        is_primary: isPrimary,
+        wine_color: wineColor,
+      };
       const previous = selected;
       setSelected((current) => sortGrapes([...current, nextItem]));
       setQuery("");
-      inputRef.current?.focus();
+      inputRefs.current[wineColor]?.focus();
 
-      const res = await addAppellationGrapeLink(appellationId, grape.id, isPrimary);
+      const res = await addAppellationGrapeLink(
+        appellationId,
+        grape.id,
+        isPrimary,
+        wineColor
+      );
       setBusyId((current) => (current === grape.id ? null : current));
 
       if (res.error) {
@@ -182,10 +209,8 @@ export function GrapeLinkSelector({ appellationId, onError }: Props) {
       setBusyId(grape.id);
       const previous = selected;
       setSelected((current) =>
-        sortGrapes(
-          current.map((item) =>
-            item.id === grape.id ? { ...item, is_primary: nextPrimary } : item
-          )
+        current.map((item) =>
+          item.id === grape.id ? { ...item, is_primary: nextPrimary } : item
         )
       );
 
@@ -196,7 +221,29 @@ export function GrapeLinkSelector({ appellationId, onError }: Props) {
         onError(res.error);
       }
     },
-    [appellationId, onError, selected, sortGrapes]
+    [appellationId, onError, selected]
+  );
+
+  const handleSetColor = useCallback(
+    async (grape: AppellationLinkedGrape, wineColor: GrapeWineColor) => {
+      if (!appellationId) return;
+      onError(null);
+      setBusyId(grape.id);
+      const previous = selected;
+      setSelected((current) =>
+        current.map((item) =>
+          item.id === grape.id ? { ...item, wine_color: wineColor } : item
+        )
+      );
+
+      const res = await setAppellationGrapeLinkColor(appellationId, grape.id, wineColor);
+      setBusyId((current) => (current === grape.id ? null : current));
+      if (res.error) {
+        setSelected(previous);
+        onError(res.error);
+      }
+    },
+    [appellationId, onError, selected]
   );
 
   const handleRemove = useCallback(
@@ -217,14 +264,17 @@ export function GrapeLinkSelector({ appellationId, onError }: Props) {
     [appellationId, onError, selected]
   );
 
-  const mainGrapes = selected.filter((g) => g.is_primary);
-  const accessoryGrapes = selected.filter((g) => !g.is_primary);
+  const unclassified = selected.filter(
+    (grape) => grape.wine_color == null || !producedSet.has(grape.wine_color)
+  );
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" ref={rootRef}>
       <p className="text-xs text-slate-500">
-        Liez des cépages existants. Les <strong>principaux / classiques</strong> apparaissent dans
-        l&apos;aperçu gratuit ; les <strong>accessoires</strong> seulement sur la fiche complète.
+        Chaque cépage a un seul rôle et une seule couleur, parmi les couleurs produites
+        (part supérieure à 0). Les <strong>principaux</strong> apparaissent dans l&apos;aperçu
+        gratuit ; les <strong>accessoires</strong> seulement sur la fiche complète. Les cépages
+        non classés restent hors fiche publique.
       </p>
 
       {!appellationId ? (
@@ -233,26 +283,43 @@ export function GrapeLinkSelector({ appellationId, onError }: Props) {
         </p>
       ) : (
         <>
-          <div>
-            <label className={labelClass}>Ajouter un cépage</label>
-            <div ref={rootRef} className="relative">
-              <input
-                ref={inputRef}
-                type="text"
-                value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value);
-                  setOpen(true);
-                }}
-                onFocus={() => setOpen(true)}
-                placeholder="Rechercher un cépage…"
-                className={inputClass}
-                disabled={!appellationId}
-              />
-            </div>
-          </div>
+          {producedColors.length === 0 ? (
+            <p className="text-xs text-amber-700">
+              Renseignez la répartition par couleur (une part supérieure à 0) pour lier de
+              nouveaux cépages.
+            </p>
+          ) : (
+            producedColors.map((color) => {
+              const inColor = selected.filter((grape) => grape.wine_color === color);
+              return (
+                <ColorGrapeSection
+                  key={color}
+                  color={color}
+                  items={inColor}
+                  busyId={busyId}
+                  query={activeColor === color ? query : ""}
+                  inputRef={(node) => {
+                    inputRefs.current[color] = node;
+                  }}
+                  onQueryChange={(value) => {
+                    setActiveColor(color);
+                    setQuery(value);
+                    setOpen(true);
+                  }}
+                  onFocus={() => {
+                    setActiveColor(color);
+                    setOpen(true);
+                    syncDropdownPosition();
+                  }}
+                  onToggleRole={handleToggleRole}
+                  onRemove={handleRemove}
+                />
+              );
+            })
+          )}
 
           {open &&
+            activeColor &&
             dropdownRect &&
             createPortal(
               <div
@@ -283,7 +350,7 @@ export function GrapeLinkSelector({ appellationId, onError }: Props) {
                             <button
                               type="button"
                               disabled={busyId === grape.id}
-                              onClick={() => void handleAdd(grape, true)}
+                              onClick={() => void handleAdd(grape, true, activeColor)}
                               className="rounded border border-slate-200 px-1.5 py-0.5 text-[10px] font-medium text-slate-700 hover:bg-slate-50"
                             >
                               Principal
@@ -291,7 +358,7 @@ export function GrapeLinkSelector({ appellationId, onError }: Props) {
                             <button
                               type="button"
                               disabled={busyId === grape.id}
-                              onClick={() => void handleAdd(grape, false)}
+                              onClick={() => void handleAdd(grape, false, activeColor)}
                               className="rounded border border-slate-200 px-1.5 py-0.5 text-[10px] font-medium text-slate-700 hover:bg-slate-50"
                             >
                               Accessoire
@@ -306,24 +373,154 @@ export function GrapeLinkSelector({ appellationId, onError }: Props) {
               document.body
             )}
 
-          <GrapeRoleList
-            title="Cépages principaux"
-            items={mainGrapes}
+          <UnclassifiedGrapes
+            items={unclassified}
+            producedColors={producedColors}
             busyId={busyId}
             onToggleRole={handleToggleRole}
+            onSetColor={handleSetColor}
             onRemove={handleRemove}
-            emptyLabel="Aucun cépage principal."
-          />
-          <GrapeRoleList
-            title="Cépages accessoires"
-            items={accessoryGrapes}
-            busyId={busyId}
-            onToggleRole={handleToggleRole}
-            onRemove={handleRemove}
-            emptyLabel="Aucun cépage accessoire."
           />
         </>
       )}
+    </div>
+  );
+}
+
+function ColorGrapeSection({
+  color,
+  items,
+  busyId,
+  query,
+  inputRef,
+  onQueryChange,
+  onFocus,
+  onToggleRole,
+  onRemove,
+}: {
+  color: GrapeWineColor;
+  items: AppellationLinkedGrape[];
+  busyId: string | null;
+  query: string;
+  inputRef: (node: HTMLInputElement | null) => void;
+  onQueryChange: (value: string) => void;
+  onFocus: () => void;
+  onToggleRole: (grape: AppellationLinkedGrape) => void;
+  onRemove: (grape: AppellationLinkedGrape) => void;
+}) {
+  const mainGrapes = items.filter((grape) => grape.is_primary);
+  const accessoryGrapes = items.filter((grape) => !grape.is_primary);
+
+  return (
+    <section className="space-y-2 rounded-md border border-slate-200 bg-slate-50 p-2.5">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-700">
+        {WINE_COLOR_LABELS[color]}
+      </p>
+      <div>
+        <label className={labelClass}>Ajouter un cépage</label>
+        <input
+          ref={inputRef}
+          type="text"
+          value={query}
+          onChange={(event) => onQueryChange(event.target.value)}
+          onFocus={onFocus}
+          placeholder="Rechercher un cépage…"
+          className={inputClass}
+        />
+      </div>
+      <GrapeRoleList
+        title="Cépages principaux"
+        items={mainGrapes}
+        busyId={busyId}
+        onToggleRole={onToggleRole}
+        onRemove={onRemove}
+        emptyLabel="Aucun cépage principal."
+      />
+      <GrapeRoleList
+        title="Cépages accessoires"
+        items={accessoryGrapes}
+        busyId={busyId}
+        onToggleRole={onToggleRole}
+        onRemove={onRemove}
+        emptyLabel="Aucun cépage accessoire."
+      />
+    </section>
+  );
+}
+
+function UnclassifiedGrapes({
+  items,
+  producedColors,
+  busyId,
+  onToggleRole,
+  onSetColor,
+  onRemove,
+}: {
+  items: AppellationLinkedGrape[];
+  producedColors: GrapeWineColor[];
+  busyId: string | null;
+  onToggleRole: (grape: AppellationLinkedGrape) => void;
+  onSetColor: (grape: AppellationLinkedGrape, color: GrapeWineColor) => void;
+  onRemove: (grape: AppellationLinkedGrape) => void;
+}) {
+  if (items.length === 0) return null;
+
+  return (
+    <div>
+      <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
+        À classer
+      </p>
+      <ul className="flex flex-col gap-2">
+        {items.map((grape) => (
+          <li
+            key={grape.id}
+            className="flex flex-wrap items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs text-slate-800"
+          >
+            <span>{grape.name_fr}</span>
+            {grape.wine_color ? (
+              <span className="text-[10px] text-amber-800">
+                {WINE_COLOR_LABELS[grape.wine_color]} n&apos;est plus produit
+              </span>
+            ) : null}
+            <button
+              type="button"
+              disabled={busyId === grape.id}
+              onClick={() => onToggleRole(grape)}
+              className="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-medium text-slate-600 hover:bg-slate-100"
+            >
+              {grape.is_primary ? "Principal" : "Accessoire"}
+            </button>
+            {producedColors.length > 0 ? (
+              <select
+                className="h-6 rounded border border-slate-200 bg-white px-1 text-[10px] text-slate-700"
+                value=""
+                disabled={busyId === grape.id}
+                onChange={(event) => {
+                  const next = event.target.value;
+                  if (isGrapeWineColor(next)) onSetColor(grape, next);
+                }}
+                aria-label={`Classer ${grape.name_fr}`}
+              >
+                <option value="">Classer…</option>
+                {producedColors.map((color) => (
+                  <option key={color} value={color}>
+                    {WINE_COLOR_LABELS[color]}
+                  </option>
+                ))}
+              </select>
+            ) : null}
+            <button
+              type="button"
+              disabled={busyId === grape.id}
+              onClick={() => onRemove(grape)}
+              className="text-slate-400 hover:text-red-600"
+              aria-label={`Retirer ${grape.name_fr}`}
+            >
+              ×
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -363,11 +560,7 @@ function GrapeRoleList({
                 disabled={busyId === grape.id}
                 onClick={() => onToggleRole(grape)}
                 className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600 hover:bg-slate-200"
-                title={
-                  grape.is_primary
-                    ? "Passer en accessoire"
-                    : "Passer en principal"
-                }
+                title={grape.is_primary ? "Passer en accessoire" : "Passer en principal"}
               >
                 {grape.is_primary ? "→ acc." : "→ princ."}
               </button>

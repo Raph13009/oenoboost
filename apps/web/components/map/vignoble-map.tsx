@@ -215,6 +215,11 @@ export function VignobleMap({
         fiche_slug: null,
         dgc_slug: null,
         grapes: [],
+        wine_pct_red: null,
+        wine_pct_rose: null,
+        wine_pct_white: null,
+        wine_pct_sparkling: null,
+        wine_pct_liqueur: null,
         dgc_children: [],
       });
       setSelectedAopLoading(true);
@@ -245,6 +250,11 @@ export function VignobleMap({
             fiche_slug: info.fiche_slug,
             dgc_slug: info.dgc_slug,
             grapes: info.grapes,
+            wine_pct_red: info.wine_pct_red,
+            wine_pct_rose: info.wine_pct_rose,
+            wine_pct_white: info.wine_pct_white,
+            wine_pct_sparkling: info.wine_pct_sparkling,
+            wine_pct_liqueur: info.wine_pct_liqueur,
             dgc_children: info.dgc_children,
           });
         }

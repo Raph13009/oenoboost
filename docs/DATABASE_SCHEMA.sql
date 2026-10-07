@@ -8,10 +8,11 @@
 --   apps/cms/docs/DATABASE_SCHEMA.md           → pointer only
 --
 -- Last focused updates:
+--   wine_region_departements — dept envelope for CMS AOP commune search
 --   #10 — public.user_aop_notes (private Premium AOP notes)
 --   #7 / #20 — grapes radar_* (0–8) + public.grape_emblematic_aop_link
 --   #22 / #9 — public.aop.is_dgc_parent + public.aop_dgc_link
---   #5 / #11 / #18 — public.aop_grape_link (main vs accessory grapes)
+--   #5 / #11 / #18 — public.aop_grape_link (main vs accessory grapes, one wine_color)
 --   #24 — public.aop.recognition_year (year-only)
 --   #21 — public.wine_region_history_milestones
 
@@ -109,9 +110,15 @@ CREATE TABLE public.aop_grape_link (
   aop_id integer NOT NULL,
   grape_id uuid NOT NULL,
   is_primary boolean NOT NULL DEFAULT true,
+  -- One color per grape. NULL until an editor classifies it.
+  wine_color text,
   CONSTRAINT aop_grape_link_pkey PRIMARY KEY (aop_id, grape_id),
   CONSTRAINT aop_grape_link_aop_id_fkey FOREIGN KEY (aop_id) REFERENCES public.aop(id) ON DELETE CASCADE,
-  CONSTRAINT aop_grape_link_grape_id_fkey FOREIGN KEY (grape_id) REFERENCES public.grapes(id) ON DELETE CASCADE
+  CONSTRAINT aop_grape_link_grape_id_fkey FOREIGN KEY (grape_id) REFERENCES public.grapes(id) ON DELETE CASCADE,
+  CONSTRAINT aop_grape_link_wine_color_check CHECK (
+    wine_color IS NULL
+    OR wine_color IN ('white', 'red', 'rose', 'sparkling', 'liqueur')
+  )
 );
 
 CREATE INDEX aop_grape_link_grape_idx ON public.aop_grape_link (grape_id);
@@ -217,3 +224,19 @@ CREATE TABLE public.wine_region_history_milestones (
 
 CREATE INDEX idx_wine_region_history_milestones_region
   ON public.wine_region_history_milestones (region_id);
+
+-- Administrative departments (INSEE prefixes) forming the geographic envelope
+-- of a wine region. Used by search_communes_full for CMS AOP commune linking.
+-- Independent of communes_full_subregion_link (map polygons).
+CREATE TABLE public.wine_region_departements (
+  region_id uuid NOT NULL,
+  dept_code text NOT NULL,
+  CONSTRAINT wine_region_departements_pkey PRIMARY KEY (region_id, dept_code),
+  CONSTRAINT wine_region_departements_region_id_fkey
+    FOREIGN KEY (region_id) REFERENCES public.wine_regions(id) ON DELETE CASCADE,
+  CONSTRAINT wine_region_departements_dept_code_check
+    CHECK (dept_code ~ '^([0-9]{2,3}|2[AB])$')
+);
+
+CREATE INDEX wine_region_departements_dept_code_idx
+  ON public.wine_region_departements (dept_code);

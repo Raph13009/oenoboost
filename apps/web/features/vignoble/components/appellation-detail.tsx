@@ -9,6 +9,11 @@ import type { DgcChildSummary } from "../queries/aop-dgc.queries";
 import { PremiumGate } from "@/components/shared/premium-gate";
 
 import { getWineColorBreakdown } from "../lib/wine-color-breakdown";
+import {
+  groupPublicGrapesByColor,
+  producedGrapeColors,
+  type GrapeColorGroup,
+} from "../lib/grape-color-groups";
 import type { AopWineColorPieChartLabels } from "./aop-wine-color-pie-chart";
 import { AopWineColorPieChart } from "./aop-wine-color-pie-chart";
 import type { AppellationFavoriteLabels } from "./appellation-favorite-button";
@@ -73,6 +78,52 @@ function ChipLink({ href, label }: { href: string; label: string }) {
   );
 }
 
+function GrapesByColor({
+  groups,
+  colorLabels,
+  mainTitle,
+  accessoryTitle,
+}: {
+  groups: GrapeColorGroup<RelatedGrape>[];
+  colorLabels: Record<GrapeColorGroup<RelatedGrape>["color"], string>;
+  mainTitle: string;
+  accessoryTitle: string;
+}) {
+  return (
+    <div className="flex flex-col gap-4">
+      {groups.map((group) => (
+        <div key={group.color} className="flex flex-col gap-3">
+          <p className="text-sm font-semibold text-foreground">
+            {colorLabels[group.color]}
+          </p>
+          {group.main.length > 0 && (
+            <ChipRow title={mainTitle}>
+              {group.main.map((grape) => (
+                <ChipLink
+                  key={grape.id}
+                  href={`/cepages/${grape.slug}`}
+                  label={grape.name_fr}
+                />
+              ))}
+            </ChipRow>
+          )}
+          {group.accessory.length > 0 && (
+            <ChipRow title={accessoryTitle}>
+              {group.accessory.map((grape) => (
+                <ChipLink
+                  key={grape.id}
+                  href={`/cepages/${grape.slug}`}
+                  label={grape.name_fr}
+                />
+              ))}
+            </ChipRow>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function ChipRow({
   title,
   children,
@@ -116,8 +167,23 @@ export function AppellationDetail({
   const showClimate = climate.length > 0;
   const locked = appellation.is_premium && userPlan !== "premium";
 
-  const mainGrapes = relatedGrapes.filter((g) => g.is_primary);
-  const accessoryGrapes = relatedGrapes.filter((g) => !g.is_primary);
+  const grapeColorGroups = groupPublicGrapesByColor(
+    relatedGrapes,
+    producedGrapeColors(appellation),
+  );
+  const grapeColorLabels = {
+    white: wineColorLabels?.white ?? "Vin blanc",
+    red: wineColorLabels?.red ?? "Vin rouge",
+    rose: wineColorLabels?.rose ?? "Vin rosé",
+    sparkling: wineColorLabels?.sparkling ?? "Vin effervescent",
+    liqueur: wineColorLabels?.liqueur ?? "Vin liquoreux",
+  };
+  const mainGrapesTitle =
+    grapeLabels?.mainGrapes ??
+    (locale === "fr" ? "Cépages principaux" : "Main grape varieties");
+  const accessoryGrapesTitle =
+    grapeLabels?.accessoryGrapes ??
+    (locale === "fr" ? "Cépages accessoires" : "Accessory grape varieties");
 
   const na = "...";
   const formatNumber = (value: number | null | undefined) =>
@@ -144,9 +210,7 @@ export function AppellationDetail({
   const hasPreviewStats = hasArea || hasProduction || hasYear;
   const showPreviewPie = Boolean(wineColorBreakdown && wineColorLabels);
   const showPreviewSoils = relatedSoils.length > 0;
-  const showPreviewMainGrapes = mainGrapes.length > 0;
-  const showPreviewAccessoryGrapes = accessoryGrapes.length > 0;
-  const showPreviewGrapes = showPreviewMainGrapes || showPreviewAccessoryGrapes;
+  const showPreviewGrapes = grapeColorGroups.length > 0;
   const showFreePreview =
     locked &&
     (showPreviewPie || hasPreviewStats || showPreviewSoils || showPreviewGrapes);
@@ -246,40 +310,13 @@ export function AppellationDetail({
           </ChipRow>
         )}
 
-        {showPreviewMainGrapes && (
-          <ChipRow
-            title={
-              grapeLabels?.mainGrapes ??
-              (locale === "fr" ? "Cépages principaux" : "Main grape varieties")
-            }
-          >
-            {mainGrapes.map((grape) => (
-              <ChipLink
-                key={grape.id}
-                href={`/cepages/${grape.slug}`}
-                label={grape.name_fr}
-              />
-            ))}
-          </ChipRow>
-        )}
-
-        {showPreviewAccessoryGrapes && (
-          <ChipRow
-            title={
-              grapeLabels?.accessoryGrapes ??
-              (locale === "fr"
-                ? "Cépages accessoires"
-                : "Accessory grape varieties")
-            }
-          >
-            {accessoryGrapes.map((grape) => (
-              <ChipLink
-                key={grape.id}
-                href={`/cepages/${grape.slug}`}
-                label={grape.name_fr}
-              />
-            ))}
-          </ChipRow>
+        {showPreviewGrapes && (
+          <GrapesByColor
+            groups={grapeColorGroups}
+            colorLabels={grapeColorLabels}
+            mainTitle={mainGrapesTitle}
+            accessoryTitle={accessoryGrapesTitle}
+          />
         )}
       </div>
     </section>
@@ -349,43 +386,14 @@ export function AppellationDetail({
           {locale === "fr" ? "Cépages" : "Grape varieties"}
         </h2>
         <div className="mt-4 flex flex-col gap-4">
-          {mainGrapes.length > 0 && (
-            <ChipRow
-              title={
-                grapeLabels?.mainGrapes ??
-                (locale === "fr"
-                  ? "Cépages principaux"
-                  : "Main grape varieties")
-              }
-            >
-              {mainGrapes.map((grape) => (
-                <ChipLink
-                  key={grape.id}
-                  href={`/cepages/${grape.slug}`}
-                  label={grape.name_fr}
-                />
-              ))}
-            </ChipRow>
-          )}
-          {accessoryGrapes.length > 0 && (
-            <ChipRow
-              title={
-                grapeLabels?.accessoryGrapes ??
-                (locale === "fr"
-                  ? "Cépages accessoires"
-                  : "Accessory grape varieties")
-              }
-            >
-              {accessoryGrapes.map((grape) => (
-                <ChipLink
-                  key={grape.id}
-                  href={`/cepages/${grape.slug}`}
-                  label={grape.name_fr}
-                />
-              ))}
-            </ChipRow>
-          )}
-          {mainGrapes.length === 0 && accessoryGrapes.length === 0 && (
+          {grapeColorGroups.length > 0 ? (
+            <GrapesByColor
+              groups={grapeColorGroups}
+              colorLabels={grapeColorLabels}
+              mainTitle={mainGrapesTitle}
+              accessoryTitle={accessoryGrapesTitle}
+            />
+          ) : (
             <p className="text-sm text-muted-foreground">{na}</p>
           )}
         </div>

@@ -7,6 +7,8 @@ export type RelatedGrape = {
   is_premium: boolean;
   /** true = main/classic ; false = accessory */
   is_primary: boolean;
+  /** null = not classified; hidden on the public fiche */
+  wine_color: "white" | "red" | "rose" | "sparkling" | "liqueur" | null;
 };
 
 /** Emblematic AOP chip target on the grape fiche. */
