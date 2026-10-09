@@ -55,4 +55,23 @@ describe("groupPublicGrapesByColor", () => {
       },
     ]);
   });
+
+  it("keeps the same grape id once under red and once under rosé", () => {
+    const sameGrapeBothColors = [
+      { id: "syrah", is_primary: true, wine_color: "red" },
+      { id: "syrah", is_primary: false, wine_color: "rose" },
+    ];
+    expect(groupPublicGrapesByColor(sameGrapeBothColors, ["red", "rose"])).toEqual([
+      {
+        color: "red",
+        main: [{ id: "syrah", is_primary: true, wine_color: "red" }],
+        accessory: [],
+      },
+      {
+        color: "rose",
+        main: [],
+        accessory: [{ id: "syrah", is_primary: false, wine_color: "rose" }],
+      },
+    ]);
+  });
 });

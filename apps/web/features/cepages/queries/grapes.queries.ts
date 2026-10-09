@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { isGrapeWineColor } from "@/features/vignoble/lib/grape-color-groups";
 import type { EmblematicAop, Grape, RelatedGrape } from "../types";
+import { expandRelatedGrapeLinks } from "../lib/related-grape-links";
 
 const GRAPE_COLUMNS =
   "id, slug, name_fr, name_en, type, origin_country, origin_region_fr, origin_region_en, origin_latitude, origin_longitude, history_fr, history_en, crossings_fr, crossings_en, production_regions_fr, production_regions_en, production_countries, viticultural_traits_fr, viticultural_traits_en, tasting_traits_fr, tasting_traits_en, emblematic_wines_fr, emblematic_wines_en, radar_acidity, radar_body, radar_aromatic_intensity, radar_tannins, radar_alcohol_potential, is_premium, status, published_at, created_at, updated_at, deleted_at";
@@ -71,31 +71,21 @@ export async function getRelatedGrapesForAppellation(
     throw new Error(`Failed to fetch appellation grapes: ${linksError.message}`);
   }
 
-  const linkRows = (links ?? []) as {
+  const linkRows = ((links ?? []) as {
     grape_id: string | null;
     is_primary: boolean | null;
     wine_color: string | null;
-  }[];
+  }[])
+    .filter(
+      (row): row is { grape_id: string; is_primary: boolean | null; wine_color: string | null } =>
+        Boolean(row.grape_id),
+    );
 
-  const grapeIds = Array.from(
-    new Set(
-      linkRows
-        .map((link) => link.grape_id)
-        .filter((value): value is string => Boolean(value)),
-    ),
-  );
+  const grapeIds = Array.from(new Set(linkRows.map((link) => link.grape_id)));
 
   if (grapeIds.length === 0) {
     return [];
   }
-
-  const linkById = new Map(
-    linkRows
-      .filter((row): row is { grape_id: string; is_primary: boolean | null; wine_color: string | null } =>
-        Boolean(row.grape_id),
-      )
-      .map((row) => [row.grape_id, row] as const),
-  );
 
   const { data, error } = await supabase
     .from("grapes")
@@ -107,17 +97,10 @@ export async function getRelatedGrapesForAppellation(
     throw new Error(`Failed to fetch related grapes: ${error.message}`);
   }
 
-  return ((data ?? []) as Omit<RelatedGrape, "is_primary" | "wine_color">[])
-    .map((grape) => {
-      const link = linkById.get(grape.id);
-      const wineColor = link?.wine_color;
-      return {
-        ...grape,
-        is_primary: link ? Boolean(link.is_primary) : true,
-        wine_color: isGrapeWineColor(wineColor) ? wineColor : null,
-      };
-    })
-    .sort((a, b) => a.name_fr.localeCompare(b.name_fr, "fr", { sensitivity: "base" }));
+  return expandRelatedGrapeLinks(
+    linkRows,
+    (data ?? []) as Omit<RelatedGrape, "is_primary" | "wine_color">[],
+  );
 }
 
 /**

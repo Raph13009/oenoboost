@@ -909,7 +909,7 @@ export async function addAppellationGrapeLink(
       is_primary: isPrimary,
       wine_color: wineColor,
     },
-    { onConflict: "aop_id,grape_id" }
+    { onConflict: "aop_id,grape_id,wine_color" }
   );
   if (error) return { error: error.message };
   revalidatePath("/admin/appellations");
@@ -919,17 +919,23 @@ export async function addAppellationGrapeLink(
 export async function setAppellationGrapeLinkColor(
   appellationId: string,
   grapeId: string,
-  wineColor: GrapeWineColor
+  wineColor: GrapeWineColor,
+  fromWineColor: GrapeWineColor | null
 ): Promise<{ error?: string }> {
   const aopId = toNumberId(appellationId);
   if (aopId === null) return { error: "Identifiant AOP invalide." };
   if (!isGrapeWineColor(wineColor)) return { error: "Couleur de vin invalide." };
   const supabase = getSupabaseAdmin();
-  const { error } = await supabase
+  let query = supabase
     .from("aop_grape_link")
     .update({ wine_color: wineColor })
     .eq("aop_id", aopId)
     .eq("grape_id", grapeId);
+  query =
+    fromWineColor == null
+      ? query.is("wine_color", null)
+      : query.eq("wine_color", fromWineColor);
+  const { error } = await query;
   if (error) return { error: error.message };
   revalidatePath("/admin/appellations");
   return {};
@@ -938,16 +944,22 @@ export async function setAppellationGrapeLinkColor(
 export async function setAppellationGrapeLinkRole(
   appellationId: string,
   grapeId: string,
-  isPrimary: boolean
+  isPrimary: boolean,
+  wineColor: GrapeWineColor | null
 ): Promise<{ error?: string }> {
   const aopId = toNumberId(appellationId);
   if (aopId === null) return { error: "Identifiant AOP invalide." };
   const supabase = getSupabaseAdmin();
-  const { error } = await supabase
+  let query = supabase
     .from("aop_grape_link")
     .update({ is_primary: isPrimary })
     .eq("aop_id", aopId)
     .eq("grape_id", grapeId);
+  query =
+    wineColor == null
+      ? query.is("wine_color", null)
+      : query.eq("wine_color", wineColor);
+  const { error } = await query;
   if (error) return { error: error.message };
   revalidatePath("/admin/appellations");
   return {};
@@ -955,16 +967,22 @@ export async function setAppellationGrapeLinkRole(
 
 export async function removeAppellationGrapeLink(
   appellationId: string,
-  grapeId: string
+  grapeId: string,
+  wineColor: GrapeWineColor | null
 ): Promise<{ error?: string }> {
   const aopId = toNumberId(appellationId);
   if (aopId === null) return { error: "Identifiant AOP invalide." };
   const supabase = getSupabaseAdmin();
-  const { error } = await supabase
+  let query = supabase
     .from("aop_grape_link")
     .delete()
     .eq("aop_id", aopId)
     .eq("grape_id", grapeId);
+  query =
+    wineColor == null
+      ? query.is("wine_color", null)
+      : query.eq("wine_color", wineColor);
+  const { error } = await query;
   if (error) return { error: error.message };
   revalidatePath("/admin/appellations");
   return {};

@@ -12,6 +12,7 @@ import {
   setAppellationGrapeLinkRole,
 } from "@/app/admin/(cms)/appellations/actions";
 import {
+  filterGrapeSearchForColor,
   isGrapeWineColor,
   producedGrapeColors,
   type GrapeWineColor,
@@ -39,7 +40,7 @@ export function GrapeLinkSelector({ appellationId, winePct, onError }: Props) {
   const [results, setResults] = useState<SearchGrape[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [busyId, setBusyId] = useState<string | null>(null);
+  const [busyKey, setBusyKey] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [activeColor, setActiveColor] = useState<GrapeWineColor | null>(null);
   const [dropdownRect, setDropdownRect] = useState<{
@@ -158,10 +159,15 @@ export function GrapeLinkSelector({ appellationId, winePct, onError }: Props) {
   }, [appellationId, onError, open, query, syncDropdownPosition]);
 
   const visibleResults = useMemo(() => {
-    if (results.length === 0) return [];
-    const selectedIds = new Set(selected.map((item) => item.id));
-    return results.filter((item) => !selectedIds.has(item.id));
-  }, [results, selected]);
+    if (results.length === 0 || !activeColor) return [];
+    return filterGrapeSearchForColor(results, selected, activeColor);
+  }, [activeColor, results, selected]);
+
+  const linkKey = useCallback(
+    (grapeId: string, wineColor: GrapeWineColor | null) =>
+      `${grapeId}:${wineColor ?? "null"}`,
+    [],
+  );
 
   useEffect(() => {
     if (activeIndex < visibleResults.length) return;
@@ -171,10 +177,17 @@ export function GrapeLinkSelector({ appellationId, winePct, onError }: Props) {
   const handleAdd = useCallback(
     async (grape: SearchGrape, isPrimary: boolean, wineColor: GrapeWineColor) => {
       if (!appellationId) return;
-      if (selected.some((item) => item.id === grape.id)) return;
+      if (
+        selected.some(
+          (item) => item.id === grape.id && item.wine_color === wineColor
+        )
+      ) {
+        return;
+      }
 
       onError(null);
-      setBusyId(grape.id);
+      const key = linkKey(grape.id, wineColor);
+      setBusyKey(key);
       const nextItem: AppellationLinkedGrape = {
         ...grape,
         is_primary: isPrimary,
@@ -191,14 +204,14 @@ export function GrapeLinkSelector({ appellationId, winePct, onError }: Props) {
         isPrimary,
         wineColor
       );
-      setBusyId((current) => (current === grape.id ? null : current));
+      setBusyKey((current) => (current === key ? null : current));
 
       if (res.error) {
         setSelected(previous);
         onError(res.error);
       }
     },
-    [appellationId, onError, selected, sortGrapes]
+    [appellationId, linkKey, onError, selected, sortGrapes]
   );
 
   const handleToggleRole = useCallback(
@@ -206,62 +219,99 @@ export function GrapeLinkSelector({ appellationId, winePct, onError }: Props) {
       if (!appellationId) return;
       const nextPrimary = !grape.is_primary;
       onError(null);
-      setBusyId(grape.id);
+      const key = linkKey(grape.id, grape.wine_color);
+      setBusyKey(key);
       const previous = selected;
       setSelected((current) =>
         current.map((item) =>
-          item.id === grape.id ? { ...item, is_primary: nextPrimary } : item
+          item.id === grape.id && item.wine_color === grape.wine_color
+            ? { ...item, is_primary: nextPrimary }
+            : item
         )
       );
 
-      const res = await setAppellationGrapeLinkRole(appellationId, grape.id, nextPrimary);
-      setBusyId((current) => (current === grape.id ? null : current));
+      const res = await setAppellationGrapeLinkRole(
+        appellationId,
+        grape.id,
+        nextPrimary,
+        grape.wine_color
+      );
+      setBusyKey((current) => (current === key ? null : current));
       if (res.error) {
         setSelected(previous);
         onError(res.error);
       }
     },
-    [appellationId, onError, selected]
+    [appellationId, linkKey, onError, selected]
   );
 
   const handleSetColor = useCallback(
     async (grape: AppellationLinkedGrape, wineColor: GrapeWineColor) => {
       if (!appellationId) return;
+      if (
+        selected.some(
+          (item) =>
+            item.id === grape.id &&
+            item.wine_color === wineColor &&
+            item.wine_color !== grape.wine_color
+        )
+      ) {
+        onError("Ce cépage est déjà lié pour cette couleur.");
+        return;
+      }
       onError(null);
-      setBusyId(grape.id);
+      const key = linkKey(grape.id, grape.wine_color);
+      setBusyKey(key);
       const previous = selected;
       setSelected((current) =>
         current.map((item) =>
-          item.id === grape.id ? { ...item, wine_color: wineColor } : item
+          item.id === grape.id && item.wine_color === grape.wine_color
+            ? { ...item, wine_color: wineColor }
+            : item
         )
       );
 
-      const res = await setAppellationGrapeLinkColor(appellationId, grape.id, wineColor);
-      setBusyId((current) => (current === grape.id ? null : current));
+      const res = await setAppellationGrapeLinkColor(
+        appellationId,
+        grape.id,
+        wineColor,
+        grape.wine_color
+      );
+      setBusyKey((current) => (current === key ? null : current));
       if (res.error) {
         setSelected(previous);
         onError(res.error);
       }
     },
-    [appellationId, onError, selected]
+    [appellationId, linkKey, onError, selected]
   );
 
   const handleRemove = useCallback(
     async (grape: AppellationLinkedGrape) => {
       if (!appellationId) return;
       onError(null);
-      setBusyId(grape.id);
+      const key = linkKey(grape.id, grape.wine_color);
+      setBusyKey(key);
       const previous = selected;
-      setSelected((current) => current.filter((item) => item.id !== grape.id));
+      setSelected((current) =>
+        current.filter(
+          (item) =>
+            !(item.id === grape.id && item.wine_color === grape.wine_color)
+        )
+      );
 
-      const res = await removeAppellationGrapeLink(appellationId, grape.id);
-      setBusyId((current) => (current === grape.id ? null : current));
+      const res = await removeAppellationGrapeLink(
+        appellationId,
+        grape.id,
+        grape.wine_color
+      );
+      setBusyKey((current) => (current === key ? null : current));
       if (res.error) {
         setSelected(previous);
         onError(res.error);
       }
     },
-    [appellationId, onError, selected]
+    [appellationId, linkKey, onError, selected]
   );
 
   const unclassified = selected.filter(
@@ -271,10 +321,10 @@ export function GrapeLinkSelector({ appellationId, winePct, onError }: Props) {
   return (
     <div className="space-y-3" ref={rootRef}>
       <p className="text-xs text-slate-500">
-        Chaque cépage a un seul rôle et une seule couleur, parmi les couleurs produites
-        (part supérieure à 0). Les <strong>principaux</strong> apparaissent dans l&apos;aperçu
-        gratuit ; les <strong>accessoires</strong> seulement sur la fiche complète. Les cépages
-        non classés restent hors fiche publique.
+        Un cépage peut être lié une fois par couleur produite (part supérieure à 0), avec un
+        rôle propre à chaque lien. Les <strong>principaux</strong> apparaissent dans
+        l&apos;aperçu gratuit ; les <strong>accessoires</strong> seulement sur la fiche
+        complète. Les cépages non classés restent hors fiche publique.
       </p>
 
       {!appellationId ? (
@@ -296,7 +346,8 @@ export function GrapeLinkSelector({ appellationId, winePct, onError }: Props) {
                   key={color}
                   color={color}
                   items={inColor}
-                  busyId={busyId}
+                  busyKey={busyKey}
+                  linkKey={linkKey}
                   query={activeColor === color ? query : ""}
                   inputRef={(node) => {
                     inputRefs.current[color] = node;
@@ -338,7 +389,9 @@ export function GrapeLinkSelector({ appellationId, winePct, onError }: Props) {
                   <p className="px-3 py-2 text-xs text-slate-500">Aucun cépage</p>
                 ) : (
                   <ul className="py-1">
-                    {visibleResults.map((grape, index) => (
+                    {visibleResults.map((grape, index) => {
+                      const addBusy = busyKey === linkKey(grape.id, activeColor);
+                      return (
                       <li key={grape.id}>
                         <div
                           className={`flex items-center justify-between gap-2 px-3 py-1.5 text-sm ${
@@ -349,7 +402,7 @@ export function GrapeLinkSelector({ appellationId, winePct, onError }: Props) {
                           <span className="flex shrink-0 gap-1">
                             <button
                               type="button"
-                              disabled={busyId === grape.id}
+                              disabled={addBusy}
                               onClick={() => void handleAdd(grape, true, activeColor)}
                               className="rounded border border-slate-200 px-1.5 py-0.5 text-[10px] font-medium text-slate-700 hover:bg-slate-50"
                             >
@@ -357,7 +410,7 @@ export function GrapeLinkSelector({ appellationId, winePct, onError }: Props) {
                             </button>
                             <button
                               type="button"
-                              disabled={busyId === grape.id}
+                              disabled={addBusy}
                               onClick={() => void handleAdd(grape, false, activeColor)}
                               className="rounded border border-slate-200 px-1.5 py-0.5 text-[10px] font-medium text-slate-700 hover:bg-slate-50"
                             >
@@ -366,7 +419,8 @@ export function GrapeLinkSelector({ appellationId, winePct, onError }: Props) {
                           </span>
                         </div>
                       </li>
-                    ))}
+                      );
+                    })}
                   </ul>
                 )}
               </div>,
@@ -376,7 +430,8 @@ export function GrapeLinkSelector({ appellationId, winePct, onError }: Props) {
           <UnclassifiedGrapes
             items={unclassified}
             producedColors={producedColors}
-            busyId={busyId}
+            busyKey={busyKey}
+            linkKey={linkKey}
             onToggleRole={handleToggleRole}
             onSetColor={handleSetColor}
             onRemove={handleRemove}
@@ -390,7 +445,8 @@ export function GrapeLinkSelector({ appellationId, winePct, onError }: Props) {
 function ColorGrapeSection({
   color,
   items,
-  busyId,
+  busyKey,
+  linkKey,
   query,
   inputRef,
   onQueryChange,
@@ -400,7 +456,8 @@ function ColorGrapeSection({
 }: {
   color: GrapeWineColor;
   items: AppellationLinkedGrape[];
-  busyId: string | null;
+  busyKey: string | null;
+  linkKey: (grapeId: string, wineColor: GrapeWineColor | null) => string;
   query: string;
   inputRef: (node: HTMLInputElement | null) => void;
   onQueryChange: (value: string) => void;
@@ -431,7 +488,8 @@ function ColorGrapeSection({
       <GrapeRoleList
         title="Cépages principaux"
         items={mainGrapes}
-        busyId={busyId}
+        busyKey={busyKey}
+        linkKey={linkKey}
         onToggleRole={onToggleRole}
         onRemove={onRemove}
         emptyLabel="Aucun cépage principal."
@@ -439,7 +497,8 @@ function ColorGrapeSection({
       <GrapeRoleList
         title="Cépages accessoires"
         items={accessoryGrapes}
-        busyId={busyId}
+        busyKey={busyKey}
+        linkKey={linkKey}
         onToggleRole={onToggleRole}
         onRemove={onRemove}
         emptyLabel="Aucun cépage accessoire."
@@ -451,14 +510,16 @@ function ColorGrapeSection({
 function UnclassifiedGrapes({
   items,
   producedColors,
-  busyId,
+  busyKey,
+  linkKey,
   onToggleRole,
   onSetColor,
   onRemove,
 }: {
   items: AppellationLinkedGrape[];
   producedColors: GrapeWineColor[];
-  busyId: string | null;
+  busyKey: string | null;
+  linkKey: (grapeId: string, wineColor: GrapeWineColor | null) => string;
   onToggleRole: (grape: AppellationLinkedGrape) => void;
   onSetColor: (grape: AppellationLinkedGrape, color: GrapeWineColor) => void;
   onRemove: (grape: AppellationLinkedGrape) => void;
@@ -471,9 +532,11 @@ function UnclassifiedGrapes({
         À classer
       </p>
       <ul className="flex flex-col gap-2">
-        {items.map((grape) => (
+        {items.map((grape) => {
+          const key = linkKey(grape.id, grape.wine_color);
+          return (
           <li
-            key={grape.id}
+            key={key}
             className="flex flex-wrap items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs text-slate-800"
           >
             <span>{grape.name_fr}</span>
@@ -484,7 +547,7 @@ function UnclassifiedGrapes({
             ) : null}
             <button
               type="button"
-              disabled={busyId === grape.id}
+              disabled={busyKey === key}
               onClick={() => onToggleRole(grape)}
               className="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-medium text-slate-600 hover:bg-slate-100"
             >
@@ -494,7 +557,7 @@ function UnclassifiedGrapes({
               <select
                 className="h-6 rounded border border-slate-200 bg-white px-1 text-[10px] text-slate-700"
                 value=""
-                disabled={busyId === grape.id}
+                disabled={busyKey === key}
                 onChange={(event) => {
                   const next = event.target.value;
                   if (isGrapeWineColor(next)) onSetColor(grape, next);
@@ -511,7 +574,7 @@ function UnclassifiedGrapes({
             ) : null}
             <button
               type="button"
-              disabled={busyId === grape.id}
+              disabled={busyKey === key}
               onClick={() => onRemove(grape)}
               className="text-slate-400 hover:text-red-600"
               aria-label={`Retirer ${grape.name_fr}`}
@@ -519,7 +582,8 @@ function UnclassifiedGrapes({
               ×
             </button>
           </li>
-        ))}
+          );
+        })}
       </ul>
     </div>
   );
@@ -528,14 +592,16 @@ function UnclassifiedGrapes({
 function GrapeRoleList({
   title,
   items,
-  busyId,
+  busyKey,
+  linkKey,
   onToggleRole,
   onRemove,
   emptyLabel,
 }: {
   title: string;
   items: AppellationLinkedGrape[];
-  busyId: string | null;
+  busyKey: string | null;
+  linkKey: (grapeId: string, wineColor: GrapeWineColor | null) => string;
   onToggleRole: (grape: AppellationLinkedGrape) => void;
   onRemove: (grape: AppellationLinkedGrape) => void;
   emptyLabel: string;
@@ -549,15 +615,17 @@ function GrapeRoleList({
         <p className="text-xs text-slate-500">{emptyLabel}</p>
       ) : (
         <ul className="flex flex-wrap gap-2">
-          {items.map((grape) => (
+          {items.map((grape) => {
+            const key = linkKey(grape.id, grape.wine_color);
+            return (
             <li
-              key={grape.id}
+              key={key}
               className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-800"
             >
               <span>{grape.name_fr}</span>
               <button
                 type="button"
-                disabled={busyId === grape.id}
+                disabled={busyKey === key}
                 onClick={() => onToggleRole(grape)}
                 className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600 hover:bg-slate-200"
                 title={grape.is_primary ? "Passer en accessoire" : "Passer en principal"}
@@ -566,7 +634,7 @@ function GrapeRoleList({
               </button>
               <button
                 type="button"
-                disabled={busyId === grape.id}
+                disabled={busyKey === key}
                 onClick={() => onRemove(grape)}
                 className="text-slate-400 hover:text-red-600"
                 aria-label={`Retirer ${grape.name_fr}`}
@@ -574,7 +642,8 @@ function GrapeRoleList({
                 ×
               </button>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </div>

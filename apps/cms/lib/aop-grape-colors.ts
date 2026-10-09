@@ -30,3 +30,20 @@ export function isGrapeWineColor(value: string | null | undefined): value is Gra
 export function producedGrapeColors(pct: WineColorBreakdown): GrapeWineColor[] {
   return GRAPE_WINE_COLOR_ORDER.filter((color) => (pct[PCT_FIELD[color]] ?? 0) > 0);
 }
+
+/**
+ * Search results for one color section. A grape already linked under this
+ * color is hidden; the same grape remains available for other colors.
+ */
+export function filterGrapeSearchForColor<T extends { id: string }>(
+  results: T[],
+  selected: ReadonlyArray<{ id: string; wine_color: GrapeWineColor | null }>,
+  activeColor: GrapeWineColor,
+): T[] {
+  const selectedInColor = new Set(
+    selected
+      .filter((item) => item.wine_color === activeColor)
+      .map((item) => item.id),
+  );
+  return results.filter((item) => !selectedInColor.has(item.id));
+}

@@ -12,7 +12,7 @@
 --   #10 — public.user_aop_notes (private Premium AOP notes)
 --   #7 / #20 — grapes radar_* (0–8) + public.grape_emblematic_aop_link
 --   #22 / #9 — public.aop.is_dgc_parent + public.aop_dgc_link
---   #5 / #11 / #18 — public.aop_grape_link (main vs accessory grapes, one wine_color)
+--   #5 / #11 / #18 — public.aop_grape_link (main vs accessory per wine_color; same grape OK across colors)
 --   #24 — public.aop.recognition_year (year-only)
 --   #21 — public.wine_region_history_milestones
 
@@ -104,21 +104,25 @@ CREATE TABLE public.aop (
 CREATE UNIQUE INDEX aop_slug_idx ON public.aop (slug);
 
 -- Issues #18 / #11 / #5: structured AOP ↔ grape links.
--- is_primary = true  → main/classic (free preview + full fiche)
--- is_primary = false → accessory (full fiche only)
+-- is_primary = true  → main/classic (free preview + full fiche) for that color link
+-- is_primary = false → accessory (full fiche only) for that color link
+-- Same grape may appear once per wine_color on the same AOP.
 CREATE TABLE public.aop_grape_link (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
   aop_id integer NOT NULL,
   grape_id uuid NOT NULL,
   is_primary boolean NOT NULL DEFAULT true,
-  -- One color per grape. NULL until an editor classifies it.
+  -- NULL until an editor classifies it. Same grape once per non-null color.
   wine_color text,
-  CONSTRAINT aop_grape_link_pkey PRIMARY KEY (aop_id, grape_id),
+  CONSTRAINT aop_grape_link_pkey PRIMARY KEY (id),
   CONSTRAINT aop_grape_link_aop_id_fkey FOREIGN KEY (aop_id) REFERENCES public.aop(id) ON DELETE CASCADE,
   CONSTRAINT aop_grape_link_grape_id_fkey FOREIGN KEY (grape_id) REFERENCES public.grapes(id) ON DELETE CASCADE,
   CONSTRAINT aop_grape_link_wine_color_check CHECK (
     wine_color IS NULL
     OR wine_color IN ('white', 'red', 'rose', 'sparkling', 'liqueur')
-  )
+  ),
+  CONSTRAINT aop_grape_link_aop_grape_color_key
+    UNIQUE NULLS NOT DISTINCT (aop_id, grape_id, wine_color)
 );
 
 CREATE INDEX aop_grape_link_grape_idx ON public.aop_grape_link (grape_id);
