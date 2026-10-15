@@ -179,6 +179,36 @@ export type SoilType = {
   updated_at: string;
 };
 
+/** Issue #15 — educational climate fiche (Météo-France 5-climate typology). */
+export type ClimateType = {
+  id: string;
+  slug: string;
+  name_fr: string;
+  name_en: string;
+  color_hex: string | null;
+  definition_fr: string | null;
+  definition_en: string | null;
+  characteristics_fr: string | null;
+  characteristics_en: string | null;
+  temperature_amplitude_fr: string | null;
+  temperature_amplitude_en: string | null;
+  rainfall_fr: string | null;
+  rainfall_en: string | null;
+  sunshine_fr: string | null;
+  sunshine_en: string | null;
+  frost_hail_risk_fr: string | null;
+  frost_hail_risk_en: string | null;
+  vine_wine_impact_fr: string | null;
+  vine_wine_impact_en: string | null;
+  carousel_order: number | null;
+  is_premium: boolean;
+  status: string;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+};
+
 export type VinificationType = {
   id: string;
   slug: string;
