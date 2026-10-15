@@ -627,7 +627,7 @@ export function VignobleMap({
 
       {showBottomPanel && (
         <div
-          className={`flex-1 overflow-hidden md:min-h-0 md:flex-none ${!hasPanelContent ? "md:hidden" : ""}`}
+          className={`min-h-0 flex-1 overflow-hidden md:flex-none ${!hasPanelContent ? "md:hidden" : ""}`}
         >
           {selectedSubregion && layerMode === "subregions" ? (
             <SubregionDetailPanel
@@ -651,7 +651,7 @@ export function VignobleMap({
               onBack={handleAopBack}
             />
           ) : showAopList ? (
-            <div className="h-full md:hidden">
+            <div className="h-full min-h-0 md:hidden">
               <AopListPanel
                 items={filteredAopItems}
                 onPick={handleAopListPick}
@@ -664,7 +664,7 @@ export function VignobleMap({
               />
             </div>
           ) : (
-            <div className="md:hidden">
+            <div className="h-full min-h-0 md:hidden">
               <SubregionLegend
                 items={subregions.legendItems}
                 onPick={(id) => {

@@ -19,11 +19,11 @@ export function SubregionLegend({ items, onPick }: SubregionLegendProps) {
         : "md:grid md:grid-cols-2 md:gap-x-2 md:gap-y-1.5 lg:grid-cols-3 xl:grid-cols-4";
 
   return (
-    <div className="h-full rounded-xl border border-border bg-card p-3 md:inline-flex md:h-auto md:w-fit md:max-w-[min(92vw,72rem)] md:max-h-[220px] md:border-border/60 md:bg-card/95 md:p-2.5 md:shadow-sm md:backdrop-blur-[2px]">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card p-3 md:inline-flex md:h-auto md:w-fit md:max-w-[min(92vw,72rem)] md:max-h-[220px] md:border-border/60 md:bg-card/95 md:p-2.5 md:shadow-sm md:backdrop-blur-[2px]">
       <div
         className={[
-          "grid h-full grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2",
-          "md:h-auto md:max-h-[200px] md:grid-cols-1 md:gap-1.5 md:overflow-y-auto md:pr-0",
+          "grid min-h-0 flex-1 grid-cols-1 gap-2 overflow-y-auto overscroll-contain pr-1 sm:grid-cols-2",
+          "md:h-auto md:max-h-[200px] md:flex-none md:grid-cols-1 md:gap-1.5 md:overflow-y-auto md:pr-0",
           desktopLayoutClass,
         ].join(" ")}
       >

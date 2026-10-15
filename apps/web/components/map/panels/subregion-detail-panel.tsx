@@ -21,15 +21,15 @@ export function SubregionDetailPanel({
   onBack,
 }: SubregionDetailPanelProps) {
   return (
-    <div className="flex h-full flex-col">
-      <div className="mb-3 flex items-center justify-between px-1">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="mb-3 flex shrink-0 items-center justify-between px-1">
         <div className="font-heading text-lg text-wine">{subregion.name}</div>
         <Button type="button" size="sm" variant="outline" onClick={onBack}>
           {strings.backToRegion}
         </Button>
       </div>
 
-      <div className="flex-1 overflow-y-auto rounded-xl border border-border bg-card p-3">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-xl border border-border bg-card p-3">
         <div className="text-xs text-muted-foreground">
           {strings.hectaresLabel}
         </div>

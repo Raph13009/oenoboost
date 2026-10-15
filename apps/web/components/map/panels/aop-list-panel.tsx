@@ -21,9 +21,9 @@ export function AopListPanel({
   emptyLabel = "Aucune AOP",
 }: AopListPanelProps) {
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card md:h-auto md:max-h-[min(60vh,520px)] md:w-56 md:border-border/60 md:bg-card/95 md:shadow-sm md:backdrop-blur-[2px]">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card md:h-auto md:max-h-[min(60vh,520px)] md:w-56 md:border-border/60 md:bg-card/95 md:shadow-sm md:backdrop-blur-[2px]">
       {filterLabel ? (
-        <div className="flex items-start justify-between gap-2 border-b border-border/60 px-2.5 py-2">
+        <div className="flex shrink-0 items-start justify-between gap-2 border-b border-border/60 px-2.5 py-2">
           <p className="min-w-0 truncate text-[11px] font-medium leading-snug text-muted-foreground">
             {filterLabel}
           </p>
@@ -38,7 +38,7 @@ export function AopListPanel({
           ) : null}
         </div>
       ) : null}
-      <div className="overflow-y-auto p-1.5">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1.5">
         {items.length === 0 ? (
           <p className="px-2 py-3 text-center text-[12px] text-muted-foreground">
             {emptyLabel}
