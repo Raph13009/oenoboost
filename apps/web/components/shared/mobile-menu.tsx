@@ -20,6 +20,7 @@ const NAV_ITEMS: { key: keyof Dictionary["nav"]; href: string }[] = [
   { key: "vignoble", href: "/vignoble" },
   { key: "cepages", href: "/cepages" },
   { key: "sols", href: "/sols" },
+  { key: "climat", href: "/climat" },
   { key: "vinification", href: "/vinification" },
   { key: "dictionnaire", href: "/dictionnaire" },
   { key: "blog", href: "/blog" },

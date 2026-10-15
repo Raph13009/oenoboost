@@ -10,6 +10,7 @@ const pathToTitle: Record<string, string> = {
   "/admin/appellations": "AOP",
   "/admin/grapes": "Cépages",
   "/admin/soil-types": "Sols",
+  "/admin/climate-types": "Climats",
   "/admin/vinification-types": "Vinification",
   "/admin/dictionary": "Glossaire",
   "/admin/news": "Actualités",

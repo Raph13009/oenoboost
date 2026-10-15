@@ -8,6 +8,7 @@
 --   apps/cms/docs/DATABASE_SCHEMA.md           → pointer only
 --
 -- Last focused updates:
+--   #15 — public.climate_types + climate_wine_region_link + climate_grape_link + get_climate_map_geojson()
 --   wine_region_departements — dept envelope for CMS AOP commune search
 --   #10 — public.user_aop_notes (private Premium AOP notes)
 --   #7 / #20 — grapes radar_* (0–8) + public.grape_emblematic_aop_link
@@ -244,3 +245,83 @@ CREATE TABLE public.wine_region_departements (
 
 CREATE INDEX wine_region_departements_dept_code_idx
   ON public.wine_region_departements (dept_code);
+
+-- Issue #15: educational climate fiches (Météo-France 5-climate typology).
+-- Map geography reuses wine_regions.geojson via climate_wine_region_link (no invented polygons).
+CREATE TABLE public.climate_types (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  slug text NOT NULL,
+  name_fr text NOT NULL,
+  name_en text NOT NULL,
+  color_hex text,
+  definition_fr text,
+  definition_en text,
+  characteristics_fr text,
+  characteristics_en text,
+  temperature_amplitude_fr text,
+  temperature_amplitude_en text,
+  rainfall_fr text,
+  rainfall_en text,
+  sunshine_fr text,
+  sunshine_en text,
+  frost_hail_risk_fr text,
+  frost_hail_risk_en text,
+  vine_wine_impact_fr text,
+  vine_wine_impact_en text,
+  carousel_order integer,
+  is_premium boolean NOT NULL DEFAULT false,
+  status character varying NOT NULL DEFAULT 'published'::character varying,
+  published_at timestamp without time zone DEFAULT now(),
+  created_at timestamp without time zone NOT NULL DEFAULT now(),
+  updated_at timestamp without time zone NOT NULL DEFAULT now(),
+  deleted_at timestamp without time zone,
+  CONSTRAINT climate_types_pkey PRIMARY KEY (id),
+  CONSTRAINT climate_types_slug_key UNIQUE (slug),
+  CONSTRAINT climate_types_status_check CHECK (
+    (status)::text = ANY (
+      ARRAY[
+        'draft'::character varying,
+        'published'::character varying,
+        'archived'::character varying
+      ]::text[]
+    )
+  )
+);
+
+CREATE INDEX climate_types_carousel_order_idx
+  ON public.climate_types (carousel_order)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE public.climate_wine_region_link (
+  climate_id uuid NOT NULL,
+  region_id uuid NOT NULL,
+  is_primary boolean NOT NULL DEFAULT false,
+  CONSTRAINT climate_wine_region_link_pkey PRIMARY KEY (climate_id, region_id),
+  CONSTRAINT climate_wine_region_link_climate_fkey
+    FOREIGN KEY (climate_id) REFERENCES public.climate_types(id) ON DELETE CASCADE,
+  CONSTRAINT climate_wine_region_link_region_fkey
+    FOREIGN KEY (region_id) REFERENCES public.wine_regions(id) ON DELETE CASCADE
+);
+
+CREATE INDEX climate_wine_region_link_region_idx
+  ON public.climate_wine_region_link (region_id);
+
+CREATE UNIQUE INDEX climate_wine_region_link_primary_region_uidx
+  ON public.climate_wine_region_link (region_id)
+  WHERE is_primary;
+
+CREATE TABLE public.climate_grape_link (
+  climate_id uuid NOT NULL,
+  grape_id uuid NOT NULL,
+  CONSTRAINT climate_grape_link_pkey PRIMARY KEY (climate_id, grape_id),
+  CONSTRAINT climate_grape_link_climate_fkey
+    FOREIGN KEY (climate_id) REFERENCES public.climate_types(id) ON DELETE CASCADE,
+  CONSTRAINT climate_grape_link_grape_fkey
+    FOREIGN KEY (grape_id) REFERENCES public.grapes(id) ON DELETE CASCADE
+);
+
+CREATE INDEX climate_grape_link_grape_idx
+  ON public.climate_grape_link (grape_id);
+
+-- RPC: FeatureCollection of wine_regions colored by primary climate (+ secondary slugs).
+-- Signature: get_climate_map_geojson() → jsonb

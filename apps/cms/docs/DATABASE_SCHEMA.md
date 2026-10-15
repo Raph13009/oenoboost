@@ -21,6 +21,7 @@ This CMS package does **not** own a separate schema dump. The public app and CMS
 | Private AOP notes | `user_aop_notes` (Premium, RLS owner-only) |
 | Recognition year | `aop.recognition_year` (`smallint`, nullable, 1800–2100) |
 | Region history | `wine_region_history_milestones` |
+| Climate module (#15) | `climate_types` + `climate_wine_region_link` + `climate_grape_link` + RPC `get_climate_map_geojson()` |
 | Content status | `draft` / `published` / `archived` + soft delete via `deleted_at` where present |
 | Bilingual fields | Usually `*_fr` / `*_en` (AOP `name` is a single column) |
 

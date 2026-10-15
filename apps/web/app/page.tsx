@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   Brain,
   ChevronRight,
+  CloudSun,
   Grape as GrapeIcon,
   Layers,
   Map as MapIcon,
@@ -219,6 +220,12 @@ export default async function HomePage() {
             title={dict.nav.sols}
             icon={<Layers className="h-5 w-5" strokeWidth={1.6} />}
             tintClass="bg-[linear-gradient(180deg,rgba(246,236,225,0.98),rgba(255,251,245,0.96))]"
+          />
+          <ModuleCard
+            href="/climat"
+            title={dict.nav.climat}
+            icon={<CloudSun className="h-5 w-5" strokeWidth={1.6} />}
+            tintClass="bg-[linear-gradient(180deg,rgba(230,242,255,0.98),rgba(248,252,255,0.96))]"
           />
           <ModuleCard
             href="/vinification"
