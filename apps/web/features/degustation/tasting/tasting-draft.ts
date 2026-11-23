@@ -44,12 +44,28 @@ export function draftToInsert(d: TastingDraft): TastingSheetInsert & {
 } {
   const v = d.vintage.trim();
   const year = v ? parseInt(v, 10) : NaN;
-  const { wine_name: wn, vintage: _v, wine_origin: _o, ...rest } = d;
   return {
-    ...rest,
-    wine_name: wn.trim() || null,
+    wine_name: d.wine_name.trim() || null,
     vintage: Number.isFinite(year) ? year : null,
+    eye_color: d.eye_color,
+    eye_robe: d.eye_robe,
+    eye_intensity: d.eye_intensity,
+    eye_tears: d.eye_tears,
+    eye_notes: d.eye_notes,
+    nose_first_nose: d.nose_first_nose,
+    nose_second_nose: d.nose_second_nose,
     nose_aroma_families: d.nose_aroma_families ?? [],
+    nose_intensity: d.nose_intensity,
+    nose_notes: d.nose_notes,
+    mouth_attack: d.mouth_attack,
+    mouth_mid: d.mouth_mid,
+    mouth_finish: d.mouth_finish,
+    mouth_acidity: d.mouth_acidity,
+    mouth_tannins: d.mouth_tannins,
+    mouth_alcohol: d.mouth_alcohol,
+    mouth_sugar: d.mouth_sugar,
+    mouth_length_caudalie: d.mouth_length_caudalie,
+    mouth_notes: d.mouth_notes,
   };
 }
 
