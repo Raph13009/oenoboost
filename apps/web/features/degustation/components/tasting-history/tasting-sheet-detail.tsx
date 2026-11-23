@@ -5,9 +5,14 @@ import { buttonVariants } from "@/components/ui/button-variants";
 import { buildAutoSummaryLine, computeTastingMood } from "@/features/degustation/utils/tasting-mood";
 import { formatTastingMonthYear } from "@/features/degustation/utils/tasting-date";
 import {
+  parseIntensity,
+  parseLimpidity,
+  parseTears,
+} from "@/features/degustation/tasting/eye-observations";
+import {
   colorLabelKey,
   getHexForEyeColorId,
-  type WineColorId,
+  isWineColorId,
 } from "@/features/degustation/tasting/wine-colors";
 import type { TastingSheet } from "@/types/database";
 import type { Dictionary } from "@/lib/i18n/dictionaries/fr";
@@ -20,23 +25,6 @@ type Props = {
   flow: Dictionary["tastingFlow"];
   locale: Locale;
 };
-
-function isWineColorId(s: string | null): s is WineColorId {
-  if (!s) return false;
-  return [
-    "pale_lemon",
-    "lemon",
-    "gold",
-    "amber",
-    "pale_pink",
-    "salmon",
-    "deep_pink",
-    "ruby",
-    "garnet",
-    "purple",
-    "tawny",
-  ].includes(s);
-}
 
 function BarMeter({ value }: { value: number }) {
   const n = Number.isFinite(value) ? value : 5;
@@ -83,22 +71,41 @@ export function TastingSheetDetail({ sheet, h, flow, locale }: Props) {
       : sheet.eye_color ?? "—";
 
   const robe = (() => {
-    const v = sheet.eye_robe;
-    if (v === "pale") return flow.robePale;
-    if (v === "medium") return flow.robeMedium;
-    if (v === "deep") return flow.robeDeep;
-    return v ?? "—";
+    const v = parseLimpidity(sheet.eye_robe);
+    if (v === "limpid") return flow.limpidClear;
+    if (v === "slightly_cloudy") return flow.limpidSlight;
+    if (v === "cloudy") return flow.limpidCloudy;
+    return sheet.eye_robe ?? "—";
   })();
 
   const intensity = (() => {
-    const v = sheet.eye_intensity;
-    if (v === "light") return flow.intensityLight;
+    const v = parseIntensity(sheet.eye_intensity);
+    if (v === "light") return flow.intensityPale;
     if (v === "medium") return flow.intensityMedium;
     if (v === "intense") return flow.intensityIntense;
-    return v ?? "—";
+    return sheet.eye_intensity ?? "—";
   })();
 
   const tears = (() => {
+    const t = parseTears(sheet.eye_tears);
+    const parts = [
+      t.thickness === "fine"
+        ? flow.tearsFine
+        : t.thickness === "thick"
+          ? flow.tearsThick
+          : null,
+      t.speed === "fast"
+        ? flow.tearsFast
+        : t.speed === "slow"
+          ? flow.tearsSlow
+          : null,
+      t.colored === "colored"
+        ? flow.tearsColored
+        : t.colored === "uncolored"
+          ? flow.tearsUncolored
+          : null,
+    ].filter(Boolean);
+    if (parts.length) return parts.join(" · ");
     const v = sheet.eye_tears;
     if (v === "none") return flow.tearsNone;
     if (v === "light") return flow.tearsLight;

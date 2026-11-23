@@ -17,6 +17,7 @@ import {
 
 type Ctx = {
   draft: TastingDraft;
+  hydrated: boolean;
   setDraft: React.Dispatch<React.SetStateAction<TastingDraft>>;
   patch: (partial: Partial<TastingDraft>) => void;
   reset: () => void;
@@ -31,7 +32,12 @@ function loadDraft(): TastingDraft {
     if (!raw) return createEmptyTastingDraft();
     const parsed = JSON.parse(raw) as Partial<TastingDraft>;
     const base = createEmptyTastingDraft();
-    return { ...base, ...parsed, nose_aroma_families: parsed.nose_aroma_families ?? [] };
+    return {
+      ...base,
+      ...parsed,
+      wine_origin: parsed.wine_origin ?? "",
+      nose_aroma_families: parsed.nose_aroma_families ?? [],
+    };
   } catch {
     return createEmptyTastingDraft();
   }
@@ -77,8 +83,8 @@ export function TastingFlowProvider({
   }, []);
 
   const value = useMemo(
-    () => ({ draft, setDraft, patch, reset }),
-    [draft, patch, reset],
+    () => ({ draft, hydrated, setDraft, patch, reset }),
+    [draft, hydrated, patch, reset],
   );
 
   return (

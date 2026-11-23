@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Playfair_Display, Tenor_Sans } from "next/font/google";
+import { Cormorant_Garamond, Playfair_Display, Tenor_Sans } from "next/font/google";
 import { Header } from "@/components/shared/header";
 import { LocaleProvider } from "@/lib/i18n/locale-context";
 import { getServerLocale } from "@/lib/i18n/server";
@@ -10,6 +10,13 @@ const playfair = Playfair_Display({
   variable: "--font-playfair",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+});
+
+const cormorant = Cormorant_Garamond({
+  variable: "--font-cormorant",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  style: ["normal", "italic"],
 });
 
 const tenorSans = Tenor_Sans({
@@ -125,7 +132,7 @@ export default async function RootLayout({
   return (
     <html
       lang={locale}
-      className={`${playfair.variable} ${tenorSans.variable}`}
+      className={`${playfair.variable} ${cormorant.variable} ${tenorSans.variable}`}
     >
       <body className="flex min-h-screen flex-col bg-background font-sans text-foreground antialiased">
         <LocaleProvider>

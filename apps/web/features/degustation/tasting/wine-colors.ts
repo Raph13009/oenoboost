@@ -1,72 +1,114 @@
-/** Identifiants stables en `eye_color` (varchar). */
+/** Identifiants stables en `eye_color` (varchar). Palette Figma Épure + legacy. */
 export type WineColorId =
-  | "pale_lemon"
-  | "lemon"
-  | "gold"
-  | "amber"
-  | "pale_pink"
-  | "salmon"
-  | "deep_pink"
+  | "violet"
+  | "purple"
   | "ruby"
   | "garnet"
-  | "purple"
-  | "tawny";
+  | "tawny"
+  | "amber"
+  // legacy
+  | "green_yellow"
+  | "straw"
+  | "pale_gold"
+  | "gold"
+  | "deep_gold"
+  | "raspberry"
+  | "cherry"
+  | "petal"
+  | "lychee"
+  | "peach"
+  | "salmon"
+  | "apricot"
+  | "copper"
+  | "pale_lemon"
+  | "lemon"
+  | "pale_pink"
+  | "deep_pink";
 
+/** Palette exacte Figma Épure — Visuel (6 teintes). */
+export const EPURE_EYE_COLORS: {
+  id: WineColorId;
+  hex: string;
+  asset: string;
+  labelKey:
+    | "colorViolet"
+    | "colorPurple"
+    | "colorRuby"
+    | "colorGarnet"
+    | "colorTawny"
+    | "colorAmber";
+}[] = [
+  {
+    id: "violet",
+    hex: "#592247",
+    asset: "/tasting/epure/color-violace.svg",
+    labelKey: "colorViolet",
+  },
+  {
+    id: "purple",
+    hex: "#72223C",
+    asset: "/tasting/epure/color-pourpre.svg",
+    labelKey: "colorPurple",
+  },
+  {
+    id: "ruby",
+    hex: "#9B273F",
+    asset: "/tasting/epure/color-rubis.svg",
+    labelKey: "colorRuby",
+  },
+  {
+    id: "garnet",
+    hex: "#732833",
+    asset: "/tasting/epure/color-grenat.svg",
+    labelKey: "colorGarnet",
+  },
+  {
+    id: "tawny",
+    hex: "#A94F38",
+    asset: "/tasting/epure/color-tuile.svg",
+    labelKey: "colorTawny",
+  },
+  {
+    id: "amber",
+    hex: "#B7793F",
+    asset: "/tasting/epure/color-ambre.svg",
+    labelKey: "colorAmber",
+  },
+];
+
+/** @deprecated kept for history / older drafts — use EPURE_EYE_COLORS for Œil UI */
 export const WINE_COLOR_GROUPS: {
   groupKey: "groupWhite" | "groupRose" | "groupRed";
   colors: { id: WineColorId; hex: string }[];
 }[] = [
   {
-    groupKey: "groupWhite",
-    colors: [
-      { id: "pale_lemon", hex: "#F5E6C8" },
-      { id: "lemon", hex: "#E8D48A" },
-      { id: "gold", hex: "#D4A84B" },
-      { id: "amber", hex: "#C0782A" },
-    ],
-  },
-  {
-    groupKey: "groupRose",
-    colors: [
-      { id: "pale_pink", hex: "#F5D0D5" },
-      { id: "salmon", hex: "#E8A090" },
-      { id: "deep_pink", hex: "#C85A6E" },
-    ],
-  },
-  {
     groupKey: "groupRed",
-    colors: [
-      { id: "ruby", hex: "#9B2335" },
-      { id: "garnet", hex: "#6B2A2A" },
-      { id: "purple", hex: "#4A1F3D" },
-      { id: "tawny", hex: "#8B5A3C" },
-    ],
+    colors: EPURE_EYE_COLORS.map(({ id, hex }) => ({ id, hex })),
   },
 ];
 
-/** Mappe id → clé i18n sous `tastingFlow` (ex. colorPaleLemon). */
+const ALL_HEX: Record<string, string> = Object.fromEntries(
+  EPURE_EYE_COLORS.map((c) => [c.id, c.hex]),
+);
+
 export function getHexForEyeColorId(id: string | null): string {
   if (!id) return "rgba(0,0,0,0.08)";
-  for (const g of WINE_COLOR_GROUPS) {
-    const c = g.colors.find((x) => x.id === id);
-    if (c) return c.hex;
-  }
-  return "rgba(0,0,0,0.12)";
+  return ALL_HEX[id] ?? "rgba(0,0,0,0.12)";
+}
+
+export function isWineColorId(s: string | null): s is WineColorId {
+  if (!s) return false;
+  return EPURE_EYE_COLORS.some((c) => c.id === s) || s in ALL_HEX;
 }
 
 export function colorLabelKey(id: WineColorId): string {
-  const map: Record<WineColorId, string> = {
-    pale_lemon: "colorPaleLemon",
-    lemon: "colorLemon",
-    gold: "colorGold",
-    amber: "colorAmber",
-    pale_pink: "colorPalePink",
-    salmon: "colorSalmon",
-    deep_pink: "colorDeepPink",
+  const map: Partial<Record<WineColorId, string>> = {
+    violet: "colorViolet",
+    purple: "colorPurple",
     ruby: "colorRuby",
     garnet: "colorGarnet",
-    purple: "colorPurple",
     tawny: "colorTawny",
+    amber: "colorAmber",
   };
-  return map[id];
+  return map[id] ?? id;
 }

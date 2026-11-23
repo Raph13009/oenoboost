@@ -7,12 +7,15 @@ export type TastingDraft = Omit<
 > & {
   wine_name: string;
   vintage: string;
+  /** Affiché dans la carte « Dans votre verre » (session only). */
+  wine_origin: string;
 };
 
 export function createEmptyTastingDraft(): TastingDraft {
   return {
     wine_name: "",
     vintage: "",
+    wine_origin: "",
     eye_color: null,
     eye_robe: null,
     eye_intensity: null,
@@ -41,7 +44,7 @@ export function draftToInsert(d: TastingDraft): TastingSheetInsert & {
 } {
   const v = d.vintage.trim();
   const year = v ? parseInt(v, 10) : NaN;
-  const { wine_name: wn, vintage: _v, ...rest } = d;
+  const { wine_name: wn, vintage: _v, wine_origin: _o, ...rest } = d;
   return {
     ...rest,
     wine_name: wn.trim() || null,

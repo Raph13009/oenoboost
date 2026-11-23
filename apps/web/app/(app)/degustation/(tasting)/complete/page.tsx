@@ -69,7 +69,7 @@ export default async function TastingCompletePage({ searchParams }: Props) {
             {t.backDegustation}
           </Link>
           <Link
-            href="/degustation/oeil/start"
+            href="/degustation/vin/start"
             className={cn(
               buttonVariants({ variant: sp.id ? "outline" : "default", size: "lg" }),
               "w-full",

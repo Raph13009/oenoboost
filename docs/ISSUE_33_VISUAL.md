@@ -6,24 +6,25 @@
 |---|---|---|
 | Homepage `/` | Figma Make | Immersive Make composition; OenoBoost branding; real data |
 | AOP browse `/vignoble/aop` | Figma Make language | Hero + cream/wine/sage + chip filters; same browse/favorites logic |
-| Tasting Œil `/degustation/oeil/start` | Figma design « Dégustation — Le visuel » | Full layout restyle; draft fields unchanged |
+| Tasting wine name `/degustation/vin/start` | Product step | Feeds Figma « Dans votre verre » card |
+| Tasting Œil `/degustation/oeil/start` | Figma [Épure — Dégustation guidée](https://www.figma.com/design/ZRpFpqou3wGifXp5xeW998) | Exact layout: hero, stepper Visuel/Odorat/Dégustation, robe 6 teintes, intensité, limpidité, sidebar |
 
 ## Shared foundations
 
-- `apps/web/styles/visual-system.css` — tokens (`--vs-*`), chips, cards, buttons
-- Homepage-scoped Make CSS remains in `features/home/home-make.css`
-- Daily Question FAB on homepage aligns with #13 behaviour via existing `DailyQuestionBubble`
+- `apps/web/styles/visual-system.css` — tokens (`--vs-*`)
+- Cormorant Garamond (`--font-cormorant`) for tasting Épure headings
+- Assets in `apps/web/public/tasting/epure/`
+- Daily Question FAB on homepage aligns with #13 via existing `DailyQuestionBubble`
 
 ## Future work (no approved mockup applied)
 
-- Nez / Bouche tasting steps (keep current UX until dedicated mockups)
+- Nez / Bouche tasting steps (Épure Odorat / Dégustation when mockups exist)
 - Dégustation hub, history, onboarding
 - Vignoble Mapbox map shell
 - Cépages, Sols, Climat, Vinification, Dictionnaire, Quiz, Blog, Auth, Profil
-- Full Make AOP schematic SVG map (not ported; Mapbox remains source of truth)
 
 ## Explicit non-goals in this pass
 
 - No schema / backend changes
-- No new product flows
-- No Figma demo imagery or mock CMS content
+- No Figma demo wine name as fake data (user enters it first)
+- Global app header stays OenoBoost (not the Épure mock nav)
