@@ -22,7 +22,7 @@ export function TastingHistoryEmpty({ labels }: Props) {
         <p className="max-w-sm text-sm text-muted-foreground">{labels.emptyBody}</p>
       </div>
       <Link
-        href="/degustation/oeil/start"
+        href="/degustation/vin/start"
         className={cn(
           buttonVariants({ variant: "default", size: "lg" }),
           "bg-wine text-primary-foreground hover:opacity-90",

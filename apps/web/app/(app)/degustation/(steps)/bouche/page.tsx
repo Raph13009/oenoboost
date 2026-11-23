@@ -15,7 +15,7 @@ export default async function DegustationBouchePage() {
   const dict = await getDictionary(await getServerLocale());
   const d = dict.degustation;
   const user = await getCurrentUser();
-  const startPath = "/degustation/oeil/start";
+  const startPath = "/degustation/vin/start";
 
   return (
     <DegustationOnboardingStep
@@ -26,7 +26,7 @@ export default async function DegustationBouchePage() {
       imageClassName="h-14 w-auto object-contain sm:h-24 md:h-28"
       title={d.step3Title}
       body={d.step3Body}
-      nextHref="/degustation/oeil/start"
+      nextHref="/degustation/vin/start"
       prevHref="/degustation/nez"
       isLastStep
       labels={d}

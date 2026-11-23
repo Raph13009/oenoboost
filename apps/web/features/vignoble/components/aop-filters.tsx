@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronDown } from "lucide-react";
 
 type RegionOption = {
   id: string;
@@ -44,29 +43,31 @@ export function AopFilters({
     <div
       className={`transition-opacity ${isPending ? "opacity-70" : "opacity-100"}`}
     >
-      <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+      <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+        <button
+          type="button"
+          onClick={() => onRegionChange("")}
+          data-active={!regionId}
+          className="vs-chip shrink-0"
+        >
           {regionLabel}
-        </span>
-        <div className="relative">
-          <select
-            name="region"
-            value={regionId}
-            onChange={(e) => onRegionChange(e.target.value)}
-            className="h-12 w-full appearance-none rounded-xl border border-border bg-card px-4 pr-11 text-base font-medium text-foreground shadow-sm outline-none transition-colors focus:border-wine/40 focus:ring-2 focus:ring-wine/10"
-          >
-            <option value="" className="text-base">
-              {regionLabel}
-            </option>
-            {regions.map((region) => (
-              <option key={region.id} value={region.id} className="text-base">
-                {locale === "fr" ? region.name_fr : region.name_en}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        </div>
-      </label>
+        </button>
+        {regions.map((region) => {
+          const label = locale === "fr" ? region.name_fr : region.name_en;
+          const active = regionId === region.id;
+          return (
+            <button
+              key={region.id}
+              type="button"
+              onClick={() => onRegionChange(region.id)}
+              data-active={active}
+              className="vs-chip shrink-0"
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

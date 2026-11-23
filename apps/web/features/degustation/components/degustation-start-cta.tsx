@@ -10,7 +10,7 @@ import {
 import { buttonVariants } from "@/components/ui/button-variants";
 import { cn } from "@/lib/utils";
 
-const START_PATH = "/degustation/oeil/start";
+const START_PATH = "/degustation/vin/start";
 
 type Props = {
   isLoggedIn: boolean;
