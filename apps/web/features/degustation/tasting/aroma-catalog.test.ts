@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   AROMA_FAMILIES,
   allAromaIds,
+  aromaFamilyLabel,
   getAromaById,
   isAromaId,
 } from "./aroma-catalog";
@@ -43,6 +44,11 @@ describe("aroma catalog (#35/#36)", () => {
     expect(floral?.subfamilies.some((s) => s.aromas.some((a) => a.id === "miel"))).toBe(
       false,
     );
+  });
+
+  it("labels families including legacy chip ids", () => {
+    expect(aromaFamilyLabel("fruity", "fr")).toBe("Fruité");
+    expect(aromaFamilyLabel("Fruity", "en")).toBe("Fruity");
   });
 
   it("keeps vegetal Bois subfamily without inventing a standalone bois aroma", () => {

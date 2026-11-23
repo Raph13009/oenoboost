@@ -278,7 +278,8 @@ export function ClimateTypeEditor({
 
   function handleSave() {
     setError(null);
-    startTransition(async () => {
+    startTransition(() => {
+      void (async () => {
       const payload = {
         slug: form.slug.trim(),
         name_fr: form.name_fr.trim(),
@@ -354,6 +355,7 @@ export function ClimateTypeEditor({
 
       router.refresh();
       if (isNew && climateId && onCreated) onCreated(climateId);
+      })();
     });
   }
 

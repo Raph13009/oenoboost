@@ -39,6 +39,9 @@ function loadDraft(): TastingDraft {
       wine_type: parsed.wine_type ?? null,
       eye_reflets: parsed.eye_reflets ?? null,
       nose_aroma_families: parsed.nose_aroma_families ?? [],
+      nose_first_families: parsed.nose_first_families ?? [],
+      nose_first_intensity: parsed.nose_first_intensity ?? null,
+      nose_plus: parsed.nose_plus ?? null,
       mouth_flavours: parsed.mouth_flavours ?? [],
       mouth_texture: parsed.mouth_texture ?? [],
     };

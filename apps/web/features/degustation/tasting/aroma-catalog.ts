@@ -282,14 +282,6 @@ export function aromaLabel(id: string, locale: "fr" | "en" = "fr"): string {
   return locale === "en" ? hit.labelEn : hit.labelFr;
 }
 
-export function allAromaIds(): string[] {
-  return Object.keys(AROMA_BY_ID);
-}
-
-export function isAromaId(id: string): boolean {
-  return id in AROMA_BY_ID;
-}
-
 /** Legacy nose family chips from before #35/#36 — map if still present in drafts. */
 export const LEGACY_NOSE_FAMILY_MAP: Record<string, AromaFamilyId> = {
   Fruity: "fruity",
@@ -300,3 +292,25 @@ export const LEGACY_NOSE_FAMILY_MAP: Record<string, AromaFamilyId> = {
   Vegetal: "vegetal",
   Fermented: "faults",
 };
+
+export function aromaFamilyLabel(
+  id: string,
+  locale: "fr" | "en" = "fr",
+): string {
+  const fam = AROMA_FAMILIES.find((f) => f.id === id);
+  if (fam) return locale === "en" ? fam.labelEn : fam.labelFr;
+  const legacy = LEGACY_NOSE_FAMILY_MAP[id];
+  if (legacy) {
+    const mapped = AROMA_FAMILIES.find((f) => f.id === legacy);
+    if (mapped) return locale === "en" ? mapped.labelEn : mapped.labelFr;
+  }
+  return id;
+}
+
+export function allAromaIds(): string[] {
+  return Object.keys(AROMA_BY_ID);
+}
+
+export function isAromaId(id: string): boolean {
+  return id in AROMA_BY_ID;
+}

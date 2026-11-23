@@ -354,9 +354,12 @@ export type TastingSheet = {
   eye_tears: string | null;
   eye_notes: string | null;
   nose_first_nose: string | null;
+  nose_first_intensity: string | null;
+  nose_first_families: string[] | null;
   nose_second_nose: string | null;
   nose_aroma_families: string[] | null;
   nose_intensity: string | null;
+  nose_plus: string | null;
   nose_notes: string | null;
   mouth_attack: string | null;
   mouth_mid: string | null;

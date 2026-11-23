@@ -26,9 +26,12 @@ export function createEmptyTastingDraft(): TastingDraft {
     eye_tears: null,
     eye_notes: null,
     nose_first_nose: null,
+    nose_first_intensity: null,
+    nose_first_families: [],
     nose_second_nose: null,
     nose_aroma_families: [],
     nose_intensity: null,
+    nose_plus: null,
     nose_notes: null,
     mouth_attack: null,
     mouth_mid: null,
@@ -61,9 +64,12 @@ export function draftToInsert(d: TastingDraft): TastingSheetInsert & {
     eye_tears: d.eye_tears,
     eye_notes: d.eye_notes,
     nose_first_nose: d.nose_first_nose,
+    nose_first_intensity: d.nose_first_intensity,
+    nose_first_families: d.nose_first_families ?? [],
     nose_second_nose: d.nose_second_nose,
     nose_aroma_families: d.nose_aroma_families ?? [],
     nose_intensity: d.nose_intensity,
+    nose_plus: d.nose_plus,
     nose_notes: d.nose_notes,
     mouth_attack: d.mouth_attack,
     mouth_mid: d.mouth_mid,
@@ -79,4 +85,4 @@ export function draftToInsert(d: TastingDraft): TastingSheetInsert & {
   };
 }
 
-export const STORAGE_KEY = "oenoboost-tasting-draft-v3";
+export const STORAGE_KEY = "oenoboost-tasting-draft-v4";

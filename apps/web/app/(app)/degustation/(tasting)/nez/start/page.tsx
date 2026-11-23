@@ -11,6 +11,12 @@ export async function generateMetadata() {
 }
 
 export default async function TastingNoseStartPage() {
-  const dict = await getDictionary(await getServerLocale());
-  return <NoseTastingClient labels={dict.tastingFlow} />;
+  const locale = await getServerLocale();
+  const dict = await getDictionary(locale);
+  return (
+    <NoseTastingClient
+      labels={dict.tastingFlow}
+      locale={locale === "en" ? "en" : "fr"}
+    />
+  );
 }

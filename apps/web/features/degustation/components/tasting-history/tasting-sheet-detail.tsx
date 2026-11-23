@@ -10,12 +10,16 @@ import {
   parseTears,
 } from "@/features/degustation/tasting/eye-observations";
 import {
+  aromaFamilyLabel,
   aromaLabel as catalogAromaLabel,
 } from "@/features/degustation/tasting/aroma-catalog";
 import {
   MOUTH_ATTACK_OPTIONS,
   MOUTH_TEXTURE_OPTIONS,
 } from "@/features/degustation/tasting/mouth-options";
+import {
+  NOSE_PLUS_OPTIONS,
+} from "@/features/degustation/tasting/nose-options";
 import {
   colorLabelKey,
   getHexForEyeColorId,
@@ -134,13 +138,19 @@ export function TastingSheetDetail({ sheet, h, flow, locale }: Props) {
     return v ?? "—";
   })();
 
-  const noseInt = (() => {
-    const v = sheet.nose_intensity;
+  const intensityOf = (v: string | null) => {
     if (v === "light") return flow.noseIntLow;
     if (v === "medium") return flow.noseIntMid;
     if (v === "pronounced") return flow.noseIntHigh;
     return v ?? "—";
-  })();
+  };
+  const noseFirstInt = intensityOf(sheet.nose_first_intensity);
+  const noseInt = intensityOf(sheet.nose_intensity);
+  const loc = locale === "en" ? "en" : "fr";
+  const nosePlusHit = NOSE_PLUS_OPTIONS.find((o) => o.id === sheet.nose_plus);
+  const nosePlus = nosePlusHit
+    ? flow[nosePlusHit.labelKey]
+    : (sheet.nose_plus ?? "—");
 
   const rawLen = sheet.mouth_length_caudalie;
   const len =
@@ -230,35 +240,61 @@ export function TastingSheetDetail({ sheet, h, flow, locale }: Props) {
         <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           {h.sectionNose}
         </h2>
-        {sheet.nose_first_nose ? (
-          <p className="text-sm leading-relaxed">{sheet.nose_first_nose}</p>
-        ) : null}
+        <dl className="grid gap-2 text-sm">
+          <div className="flex justify-between gap-4">
+            <dt className="text-muted-foreground">{h.labelFirstNose}</dt>
+            <dd className="max-w-[60%] text-right font-medium">
+              {sheet.nose_first_nose?.trim() || "—"}
+            </dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-muted-foreground">{h.labelFirstNoseIntensity}</dt>
+            <dd className="font-medium">{noseFirstInt}</dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-muted-foreground">{h.labelFirstFamilies}</dt>
+            <dd className="max-w-[60%] text-right font-medium">
+              {sheet.nose_first_families &&
+              sheet.nose_first_families.length > 0
+                ? sheet.nose_first_families
+                    .map((id) => aromaFamilyLabel(id, loc))
+                    .join(", ")
+                : "—"}
+            </dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-muted-foreground">{h.labelSecondAromas}</dt>
+            <dd className="max-w-[60%] text-right font-medium">
+              {sheet.nose_aroma_families &&
+              sheet.nose_aroma_families.length > 0
+                ? sheet.nose_aroma_families
+                    .map((id) =>
+                      catalogAromaLabel(id, loc) !== id
+                        ? catalogAromaLabel(id, loc)
+                        : aromaLabel(id, flow),
+                    )
+                    .join(", ")
+                : "—"}
+            </dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-muted-foreground">{flow.labelNoseIntensity}</dt>
+            <dd className="font-medium">{noseInt}</dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-muted-foreground">{h.labelNosePlus}</dt>
+            <dd className="font-medium">{nosePlus}</dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-muted-foreground">{h.labelConclusion}</dt>
+            <dd className="max-w-[60%] text-right font-medium">
+              {sheet.nose_notes?.trim() || "—"}
+            </dd>
+          </div>
+        </dl>
         {sheet.nose_second_nose ? (
           <p className="text-sm leading-relaxed text-muted-foreground">
             {sheet.nose_second_nose}
-          </p>
-        ) : null}
-        {sheet.nose_aroma_families && sheet.nose_aroma_families.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
-            {sheet.nose_aroma_families.map((id) => (
-              <span
-                key={id}
-                className="rounded-full border border-border/60 bg-muted/40 px-2.5 py-1 text-xs font-medium"
-              >
-                {aromaLabel(id, flow)}
-              </span>
-            ))}
-          </div>
-        ) : null}
-        <p className="text-sm">
-          <span className="text-muted-foreground">
-            {flow.labelNoseIntensity}:{" "}
-          </span>
-          <span className="font-medium">{noseInt}</span>
-        </p>
-        {sheet.nose_notes ? (
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            {sheet.nose_notes}
           </p>
         ) : null}
       </section>
