@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -16,7 +17,7 @@ export type CurrentUser = {
   locale: Locale;
 };
 
-export async function getCurrentUser(): Promise<CurrentUser | null> {
+export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const supabase = await createClient();
   const {
     data: { user: authUser },
@@ -65,7 +66,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     xp: typeof data.xp === "number" ? data.xp : 0,
     locale: (data.locale as Locale) || "fr",
   };
-}
+});
 
 export async function requireUser(): Promise<CurrentUser> {
   const user = await getCurrentUser();

@@ -18,7 +18,7 @@ import {
   HomeKnowledgeExplorer,
   type HomeKnowledgeItem,
 } from "@/features/home/components/home-knowledge-explorer";
-import { getRegions } from "@/features/vignoble/queries/get-regions";
+import { getRegionNavMeta } from "@/features/vignoble/queries/get-regions";
 
 import { getFavoriteGrapesForUser } from "@/features/cepages/queries/favorites.queries";
 import type { FavoriteGrapeRow } from "@/features/cepages/queries/favorites.queries";
@@ -35,15 +35,17 @@ type FavoriteHomeItem =
   | { type: "soil"; row: FavoriteSoilRow };
 
 export default async function HomePage() {
-  const locale = await getServerLocale();
+  const [locale, user] = await Promise.all([
+    getServerLocale(),
+    getCurrentUser(),
+  ]);
   const dict = await getDictionary(locale);
 
-  const user = await getCurrentUser();
   const [grapeRows, aopRows, soilRows, regions] = await Promise.all([
     user ? getFavoriteGrapesForUser(user.id) : Promise.resolve([]),
     user ? getFavoriteAppellationsForUser(user.id) : Promise.resolve([]),
     user ? getFavoriteSoilsForUser(user.id) : Promise.resolve([]),
-    getRegions(),
+    getRegionNavMeta(),
   ]);
 
   const publishedRegions = regions.filter((region) => region.status === "published");

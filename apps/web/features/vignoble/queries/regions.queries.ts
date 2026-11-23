@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import type { WineRegion } from "../types";
 
+/** Full map payload (includes GeoJSON). Prefer `getRegionNavMeta` on home. */
 export async function getRegions(): Promise<WineRegion[]> {
   const supabase = await createClient();
 
@@ -17,6 +18,28 @@ export async function getRegions(): Promise<WineRegion[]> {
 
   if (error) throw new Error(`Failed to fetch regions: ${error.message}`);
   return (data ?? []) as WineRegion[];
+}
+
+
+export type RegionNavMeta = Pick<
+  WineRegion,
+  "id" | "slug" | "name_fr" | "name_en" | "status" | "map_order"
+>;
+
+/** Slim region list for nav / home showcase (no GeoJSON). */
+export async function getRegionNavMeta(): Promise<RegionNavMeta[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("wine_regions")
+    .select("id, slug, name_fr, name_en, status, map_order")
+    .is("deleted_at", null)
+    .order("map_order", { ascending: true });
+
+  if (error) {
+    throw new Error(`Failed to fetch region nav meta: ${error.message}`);
+  }
+  return (data ?? []) as RegionNavMeta[];
 }
 
 export async function getRegionBySlug(

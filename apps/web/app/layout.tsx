@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Playfair_Display, Tenor_Sans } from "next/font/google";
+import { Suspense } from "react";
 import { Header } from "@/components/shared/header";
+import { NavigationPending } from "@/components/shared/navigation-pending";
+import { NavigationProgress } from "@/components/shared/navigation-progress";
 import { LocaleProvider } from "@/lib/i18n/locale-context";
 import { getServerLocale } from "@/lib/i18n/server";
 import "./globals.css";
@@ -136,7 +139,11 @@ export default async function RootLayout({
     >
       <body className="flex min-h-screen flex-col bg-background font-sans text-foreground antialiased">
         <LocaleProvider>
-          <Header />
+          <NavigationProgress />
+          <NavigationPending />
+          <Suspense fallback={<div className="h-14" />}>
+            <Header />
+          </Suspense>
           <main
             id="app-main"
             className="w-full px-6 pt-5 pb-8 lg:px-8"

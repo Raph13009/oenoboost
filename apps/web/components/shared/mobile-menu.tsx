@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Sheet,
   SheetContent,
@@ -36,9 +37,25 @@ type MobileMenuProps = {
 
 export function MobileMenu({ open, onOpenChange, user }: MobileMenuProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { locale } = useLocale();
   const dict = locale === "en" ? enDict : frDict;
   const isAopRoute = pathname.startsWith("/vignoble/aop");
+
+  // Warm route compile + RSC while the drawer is open so clicks feel instant.
+  useEffect(() => {
+    if (!open) return;
+    const hrefs = [
+      ...NAV_ITEMS.map((item) => item.href),
+      "/vignoble/aop",
+      "/profil",
+      "/signup",
+      "/login",
+    ];
+    for (const href of hrefs) {
+      if (href !== pathname) router.prefetch(href);
+    }
+  }, [open, pathname, router]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

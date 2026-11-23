@@ -1,27 +1,26 @@
-import { getServerLocale } from "@/lib/i18n/server";
-import { getDictionary } from "@/lib/i18n/get-dictionary";
-import { getRegions } from "@/features/vignoble/queries/get-regions";
+import { Suspense } from "react";
+
+import { RouteLoadingSkeleton } from "@/components/shared/route-loading-skeleton";
 import { VignobleMap } from "@/features/vignoble/components/vignoble-map";
+import { getRegions } from "@/features/vignoble/queries/get-regions";
+import { getDictionary } from "@/lib/i18n/get-dictionary";
+import { getServerLocale } from "@/lib/i18n/server";
 
 export const metadata = {
   title: "Vignoble — OenoBoost",
 };
 
-export default async function VignoblePage({
-  searchParams,
-}: {
-  searchParams?: Promise<{ region?: string; subregion?: string }>;
-}) {
+type Search = { region?: string; subregion?: string };
+
+async function VignobleMapSection({ qp }: { qp: Search }) {
   const locale = await getServerLocale();
   const dict = await getDictionary(locale);
-  const qp = (await searchParams) ?? {};
-
   const regions = await getRegions();
 
   const mapRegions = regions
     .filter(
       (r): r is (typeof regions)[number] & { geojson: unknown } =>
-      Boolean(r.geojson),
+        Boolean(r.geojson),
     )
     .map((r) => ({
       region_id: r.id,
@@ -36,46 +35,64 @@ export default async function VignoblePage({
     }));
 
   return (
+    <VignobleMap
+      regions={mapRegions}
+      heightClassName="h-full"
+      locale={locale}
+      initialRegionSlug={qp.region}
+      initialSubregionSlug={qp.subregion}
+      strings={{
+        discover: dict.vignoble.discover,
+        backToRegions: dict.vignoble.backToRegions,
+        backToRegion: dict.vignoble.backToRegion,
+        subregionsLayer: dict.vignoble.subregionsLayer,
+        aopLayer: dict.vignoble.aopLayer,
+        grandCruLegend: dict.vignoble.mapGrandCruLegend,
+        departmentsLabel: dict.vignoble.departmentCount,
+        hectaresLabel: dict.vignoble.hectares,
+        totalProductionLabel: dict.vignoble.totalProduction,
+        grapesLabel: dict.vignoble.mapGrapesLabel,
+        mainGrapesLabel: dict.vignoble.mainGrapes,
+        accessoryGrapesLabel: dict.vignoble.accessoryGrapes,
+        wineColorWhite: dict.vignoble.wineColorWhite,
+        wineColorRed: dict.vignoble.wineColorRed,
+        wineColorRose: dict.vignoble.wineColorRose,
+        wineColorSparkling: dict.vignoble.wineColorSparkling,
+        wineColorLiqueur: dict.vignoble.wineColorLiqueur,
+        dgcChildrenLabel: dict.vignoble.dgcSectionTitle,
+        historyTimelineTitle: dict.vignoble.historyTimelineTitle,
+        historyTimelineHint: dict.vignoble.historyTimelineHint,
+        footerInfoTab: dict.vignoble.footerInfoTab,
+        footerHistoryTab: dict.vignoble.footerHistoryTab,
+        footerPanelToggleAria: dict.vignoble.footerPanelToggleAria,
+        openAopDetail: dict.vignoble.mapOpenAopDetail,
+        loading: dict.common.loading,
+        closeLabel: dict.common.close,
+        na: dict.common.na,
+      }}
+    />
+  );
+}
+
+export default async function VignoblePage({
+  searchParams,
+}: {
+  searchParams?: Promise<Search>;
+}) {
+  const qp = (await searchParams) ?? {};
+
+  return (
     // Full-bleed viewport below the sticky header.
     // We cancel the app layout padding here so the vignoble page always fits in one screen on mobile.
     <div className="-mx-6 -mt-5 -mb-8 h-[calc(100dvh-3.5rem)] overflow-hidden overscroll-none lg:-mx-8">
       <div className="h-full p-1.5 md:p-1">
-        <VignobleMap
-          regions={mapRegions}
-          heightClassName="h-full"
-          locale={locale}
-          initialRegionSlug={qp.region}
-          initialSubregionSlug={qp.subregion}
-          strings={{
-            discover: dict.vignoble.discover,
-            backToRegions: dict.vignoble.backToRegions,
-            backToRegion: dict.vignoble.backToRegion,
-            subregionsLayer: dict.vignoble.subregionsLayer,
-            aopLayer: dict.vignoble.aopLayer,
-            grandCruLegend: dict.vignoble.mapGrandCruLegend,
-            departmentsLabel: dict.vignoble.departmentCount,
-            hectaresLabel: dict.vignoble.hectares,
-            totalProductionLabel: dict.vignoble.totalProduction,
-            grapesLabel: dict.vignoble.mapGrapesLabel,
-            mainGrapesLabel: dict.vignoble.mainGrapes,
-            accessoryGrapesLabel: dict.vignoble.accessoryGrapes,
-            wineColorWhite: dict.vignoble.wineColorWhite,
-            wineColorRed: dict.vignoble.wineColorRed,
-            wineColorRose: dict.vignoble.wineColorRose,
-            wineColorSparkling: dict.vignoble.wineColorSparkling,
-            wineColorLiqueur: dict.vignoble.wineColorLiqueur,
-            dgcChildrenLabel: dict.vignoble.dgcSectionTitle,
-            historyTimelineTitle: dict.vignoble.historyTimelineTitle,
-            historyTimelineHint: dict.vignoble.historyTimelineHint,
-            footerInfoTab: dict.vignoble.footerInfoTab,
-            footerHistoryTab: dict.vignoble.footerHistoryTab,
-            footerPanelToggleAria: dict.vignoble.footerPanelToggleAria,
-            openAopDetail: dict.vignoble.mapOpenAopDetail,
-            loading: dict.common.loading,
-            closeLabel: dict.common.close,
-            na: dict.common.na,
-          }}
-        />
+        <Suspense
+          fallback={
+            <RouteLoadingSkeleton variant="map" className="h-full" />
+          }
+        >
+          <VignobleMapSection qp={qp} />
+        </Suspense>
       </div>
     </div>
   );

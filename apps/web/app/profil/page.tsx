@@ -26,10 +26,13 @@ type Props = {
 };
 
 export default async function ProfilePage({ searchParams }: Props) {
-  const user = await requireUser();
-  const locale = await getServerLocale();
+  const [user, locale, qpRaw] = await Promise.all([
+    requireUser(),
+    getServerLocale(),
+    searchParams ?? Promise.resolve(undefined),
+  ]);
   const dict = await getDictionary(locale);
-  const qp = (await searchParams) ?? {};
+  const qp = qpRaw ?? {};
   const checkoutSuccess = qp.checkout === "success";
   const checkoutCancel = qp.checkout === "cancel";
   const subscriptionCanceled = qp.subscription === "canceled";

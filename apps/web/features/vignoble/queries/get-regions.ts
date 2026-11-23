@@ -1,3 +1,4 @@
-import { getRegions } from "./regions.queries";
+import { getRegionNavMeta, getRegions } from "./regions.queries";
 
-export { getRegions };
+export { getRegionNavMeta, getRegions };
+export type { RegionNavMeta } from "./regions.queries";

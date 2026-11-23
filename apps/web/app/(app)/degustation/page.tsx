@@ -16,10 +16,13 @@ export async function generateMetadata() {
 }
 
 export default async function DegustationPage() {
-  const dict = await getDictionary(await getServerLocale());
+  const [locale, user] = await Promise.all([
+    getServerLocale(),
+    getCurrentUser(),
+  ]);
+  const dict = await getDictionary(locale);
   const d = dict.degustation;
   const t = dict.tastingFlow;
-  const user = await getCurrentUser();
 
   const steps = [
     { n: "01", title: t.epureStepVisual, sub: t.epureStepVisualSub },
