@@ -346,7 +346,9 @@ export type DictionaryTerm = {
 export type TastingSheet = {
   id: string;
   user_id: string;
+  wine_type: "white" | "red" | "rose" | null;
   eye_color: string | null;
+  eye_reflets: string | null;
   eye_robe: string | null;
   eye_intensity: string | null;
   eye_tears: string | null;
