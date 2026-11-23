@@ -715,6 +715,10 @@ const fr = {
     footerLinkSols: "Sols & climats",
     footerLinkQuiz: "Quiz",
     footerLinkGlossaire: "Glossaire",
+    footerLegalNav: "Informations légales",
+    footerLinkMentions: "Mentions légales",
+    footerLinkCgv: "CGV",
+    footerLinkPrivacy: "Confidentialité",
     footerLegal:
       "© 2026 OenoBoost · L’abus d’alcool est dangereux pour la santé.",
   },
@@ -790,8 +794,9 @@ const fr = {
     deleteAccount: "Supprimer mon compte",
     deleteAccountTitle: "Suppression de compte",
     deleteAccountBody:
-      "Pour supprimer définitivement votre compte, envoyez un email à {{email}} en indiquant clairement votre demande et l'adresse email de votre compte. Votre compte sera supprimé sous 30 jours ouvrés après confirmation.",
-    deleteAccountAck: "Compris",
+      "Pour demander la suppression de votre compte, envoyez un email à {{email}} en indiquant clairement votre demande et l'adresse email de votre compte.\n\nAprès confirmation, les données personnelles liées à votre compte dans OenoBoost (profil, dégustations, favoris, quiz, notes associées) sont destinées à être supprimées sous 30 jours ouvrés.\n\nLes enregistrements de facturation et d'abonnement conservés par Stripe, ou requis par des obligations comptables / fiscales, ne sont pas effacés par cette procédure.",
+    deleteAccountEmailCta: "Envoyer la demande par email",
+    deleteAccountAck: "Fermer",
   },
 };
 

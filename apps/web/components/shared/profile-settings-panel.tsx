@@ -2,15 +2,17 @@
 
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { buildRightsMailto } from "@/content/legal";
 import { signOutAction } from "@/features/auth/actions";
 import { cancelCurrentSubscriptionAction } from "@/features/billing/actions/billing-actions";
+import { cn } from "@/lib/utils";
 
 export type ProfileSettingsCopy = {
   settings: string;
@@ -22,6 +24,7 @@ export type ProfileSettingsCopy = {
   deleteAccount: string;
   deleteDialogTitle: string;
   deleteDialogBody: string;
+  deleteDialogEmailCta: string;
   deleteDialogAck: string;
 };
 
@@ -40,6 +43,7 @@ export function ProfileSettingsPanel({ copy, deleteContactEmail, isPremium }: Pr
     "{{email}}",
     deleteContactEmail,
   );
+  const deleteMailto = buildRightsMailto("delete");
 
   return (
     <>
@@ -99,13 +103,22 @@ export function ProfileSettingsPanel({ copy, deleteContactEmail, isPremium }: Pr
           <DialogDescription className="whitespace-pre-line text-foreground/90">
             {bodyWithEmail}
           </DialogDescription>
-          <Button
-            type="button"
-            className="mt-2 w-full"
-            onClick={() => setDeleteOpen(false)}
-          >
-            {copy.deleteDialogAck}
-          </Button>
+          <div className="mt-2 flex flex-col gap-2">
+            <a
+              href={deleteMailto}
+              className={cn(buttonVariants({ variant: "default" }), "w-full")}
+            >
+              {copy.deleteDialogEmailCta}
+            </a>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => setDeleteOpen(false)}
+            >
+              {copy.deleteDialogAck}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 

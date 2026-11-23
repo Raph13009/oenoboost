@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { History, Star } from "lucide-react";
 
 import { ProfileSettingsPanel } from "@/components/shared/profile-settings-panel";
+import { getAccountDeleteEmail } from "@/content/legal";
 import { openBillingPortalAction } from "@/features/billing/actions/billing-actions";
 import { getLevelProgress } from "@/features/gamification/levels";
 import { requireUser } from "@/lib/auth/session";
@@ -43,8 +44,7 @@ export default async function ProfilePage({ searchParams }: Props) {
   const fullName = [user.first_name, user.last_name].filter(Boolean).join(" ");
   const progression = getLevelProgress(user.xp);
 
-  const deleteContactEmail =
-    process.env.NEXT_PUBLIC_ACCOUNT_DELETE_EMAIL ?? "support@oenoboost.com";
+  const deleteContactEmail = getAccountDeleteEmail();
 
   return (
     <div className="flex flex-col gap-6">
@@ -215,6 +215,7 @@ export default async function ProfilePage({ searchParams }: Props) {
               deleteAccount: dict.profile.deleteAccount,
               deleteDialogTitle: dict.profile.deleteAccountTitle,
               deleteDialogBody: dict.profile.deleteAccountBody,
+              deleteDialogEmailCta: dict.profile.deleteAccountEmailCta,
               deleteDialogAck: dict.profile.deleteAccountAck,
             }}
           />

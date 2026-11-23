@@ -2,14 +2,27 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 import { useState } from "react";
 
 import { MobileMenu } from "./mobile-menu";
 import type { CurrentUser } from "@/lib/auth/session";
 
+const LEGAL_PATHS = new Set([
+  "/mentions-legales",
+  "/cgv",
+  "/confidentialite",
+]);
+
 export function HeaderClient({ user }: { user: CurrentUser | null }) {
+  const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // Legal pages ship their own branded chrome (home CTA + doc tabs).
+  if (pathname && LEGAL_PATHS.has(pathname)) {
+    return null;
+  }
 
   return (
     <>

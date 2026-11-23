@@ -10,6 +10,8 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { LegalInlineNotice } from "@/components/legal/legal-inline-notice";
+import { getLegalBundle } from "@/content/legal";
 import { createPremiumCheckoutSession } from "@/features/billing/actions/billing-actions";
 import enDict from "@/lib/i18n/dictionaries/en";
 import frDict from "@/lib/i18n/dictionaries/fr";
@@ -30,6 +32,7 @@ export function PaywallModal({ open, onOpenChange }: PaywallModalProps) {
   const { locale } = useLocale();
   const copy = locale === "en" ? enDict.paywall : frDict.paywall;
   const common = locale === "en" ? enDict.common : frDict.common;
+  const legal = getLegalBundle(locale);
 
   const [toast, setToast] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -115,6 +118,18 @@ export function PaywallModal({ open, onOpenChange }: PaywallModalProps) {
                 {copy.cancelAnytime}
               </p>
             </div>
+
+            <LegalInlineNotice
+              className="mt-4 text-left text-xs leading-relaxed text-muted-foreground"
+              template={legal.paywallLegal}
+              links={{
+                cgv: { href: "/cgv", label: legal.paywallCgvLabel },
+                privacy: {
+                  href: "/confidentialite",
+                  label: legal.paywallPrivacyLabel,
+                },
+              }}
+            />
 
             <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
               <Button
