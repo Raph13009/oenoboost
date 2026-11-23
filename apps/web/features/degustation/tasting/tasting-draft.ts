@@ -32,6 +32,8 @@ export function createEmptyTastingDraft(): TastingDraft {
     nose_notes: null,
     mouth_attack: null,
     mouth_mid: null,
+    mouth_flavours: [],
+    mouth_texture: [],
     mouth_finish: null,
     mouth_acidity: 5,
     mouth_tannins: 5,
@@ -65,6 +67,8 @@ export function draftToInsert(d: TastingDraft): TastingSheetInsert & {
     nose_notes: d.nose_notes,
     mouth_attack: d.mouth_attack,
     mouth_mid: d.mouth_mid,
+    mouth_flavours: d.mouth_flavours ?? [],
+    mouth_texture: d.mouth_texture ?? [],
     mouth_finish: d.mouth_finish,
     mouth_acidity: d.mouth_acidity,
     mouth_tannins: d.mouth_tannins,
@@ -75,4 +79,4 @@ export function draftToInsert(d: TastingDraft): TastingSheetInsert & {
   };
 }
 
-export const STORAGE_KEY = "oenoboost-tasting-draft-v2";
+export const STORAGE_KEY = "oenoboost-tasting-draft-v3";

@@ -360,6 +360,8 @@ export type TastingSheet = {
   nose_notes: string | null;
   mouth_attack: string | null;
   mouth_mid: string | null;
+  mouth_flavours: string[] | null;
+  mouth_texture: string[] | null;
   mouth_finish: string | null;
   mouth_acidity: number | null;
   mouth_tannins: number | null;

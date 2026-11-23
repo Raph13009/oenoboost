@@ -1,7 +1,6 @@
 import { DegustationOnboardingStep } from "@/features/degustation/components/degustation-onboarding-step";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { getServerLocale } from "@/lib/i18n/server";
-import { getCurrentUser } from "@/lib/auth/session";
 
 export async function generateMetadata() {
   const locale = await getServerLocale();
@@ -14,8 +13,6 @@ export async function generateMetadata() {
 export default async function DegustationBouchePage() {
   const dict = await getDictionary(await getServerLocale());
   const d = dict.degustation;
-  const user = await getCurrentUser();
-  const startPath = "/degustation/vin/start";
 
   return (
     <DegustationOnboardingStep
@@ -30,19 +27,6 @@ export default async function DegustationBouchePage() {
       prevHref="/degustation/nez"
       isLastStep
       labels={d}
-      authGate={
-        user
-          ? null
-          : {
-              nextPath: startPath,
-              copy: {
-                title: d.authModalTitle,
-                body: d.authModalBody,
-                login: dict.auth.login,
-                register: dict.auth.registerButton,
-              },
-            }
-      }
     />
   );
 }

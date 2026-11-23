@@ -348,6 +348,8 @@ CREATE TABLE public.tasting_sheets (
   nose_notes text NULL,
   mouth_attack text NULL,
   mouth_mid text NULL,
+  mouth_flavours text[] NULL,
+  mouth_texture text[] NULL,
   mouth_finish text NULL,
   mouth_acidity numeric NULL,
   mouth_tannins numeric NULL,

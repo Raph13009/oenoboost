@@ -38,6 +38,8 @@ export async function saveTastingSheetAction(
     nose_notes: payload.nose_notes,
     mouth_attack: payload.mouth_attack,
     mouth_mid: payload.mouth_mid,
+    mouth_flavours: payload.mouth_flavours ?? [],
+    mouth_texture: payload.mouth_texture ?? [],
     mouth_finish: payload.mouth_finish,
     mouth_acidity: payload.mouth_acidity,
     mouth_tannins: payload.mouth_tannins,

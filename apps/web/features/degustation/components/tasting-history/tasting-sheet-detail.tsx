@@ -10,6 +10,13 @@ import {
   parseTears,
 } from "@/features/degustation/tasting/eye-observations";
 import {
+  aromaLabel as catalogAromaLabel,
+} from "@/features/degustation/tasting/aroma-catalog";
+import {
+  MOUTH_ATTACK_OPTIONS,
+  MOUTH_TEXTURE_OPTIONS,
+} from "@/features/degustation/tasting/mouth-options";
+import {
   colorLabelKey,
   getHexForEyeColorId,
   isWineColorId,
@@ -260,40 +267,60 @@ export function TastingSheetDetail({ sheet, h, flow, locale }: Props) {
         <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           {h.sectionMouth}
         </h2>
-        <p className="text-sm leading-snug">
-          <span className="text-muted-foreground">{flow.mouthAttack}: </span>
-          <span className="font-medium">
-            {sheet.mouth_attack === "soft"
-              ? flow.attackSoft
-              : sheet.mouth_attack === "medium"
-                ? flow.attackMedium
-                : sheet.mouth_attack === "strong"
-                  ? flow.attackStrong
-                  : sheet.mouth_attack ?? "—"}
-          </span>
-          <span className="text-muted-foreground"> · </span>
-          <span className="text-muted-foreground">{flow.mouthMid}: </span>
-          <span className="font-medium">
-            {sheet.mouth_mid === "light"
-              ? flow.midLight
-              : sheet.mouth_mid === "round"
-                ? flow.midRound
-                : sheet.mouth_mid === "full"
-                  ? flow.midFull
-                  : sheet.mouth_mid ?? "—"}
-          </span>
-          <span className="text-muted-foreground"> · </span>
-          <span className="text-muted-foreground">{flow.mouthFinish}: </span>
-          <span className="font-medium">
-            {sheet.mouth_finish === "short"
-              ? flow.finishShort
-              : sheet.mouth_finish === "medium"
-                ? flow.finishMedium
-                : sheet.mouth_finish === "long"
-                  ? flow.finishLong
-                  : sheet.mouth_finish ?? "—"}
-          </span>
-        </p>
+        <dl className="grid gap-2 text-sm">
+          <div className="flex justify-between gap-4">
+            <dt className="text-muted-foreground">{flow.mouthAttack}</dt>
+            <dd className="font-medium text-right">
+              {(() => {
+                const hit = MOUTH_ATTACK_OPTIONS.find(
+                  (o) => o.id === sheet.mouth_attack,
+                );
+                if (hit) return flow[hit.labelKey];
+                if (sheet.mouth_attack === "soft") return flow.attackSoft;
+                if (sheet.mouth_attack === "medium") return flow.attackMedium;
+                if (sheet.mouth_attack === "strong") return flow.attackStrong;
+                return sheet.mouth_attack ?? "—";
+              })()}
+            </dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-muted-foreground">{h.labelFlavours}</dt>
+            <dd className="max-w-[60%] text-right font-medium">
+              {sheet.mouth_flavours && sheet.mouth_flavours.length > 0
+                ? sheet.mouth_flavours
+                    .map((id) =>
+                      catalogAromaLabel(id, locale === "en" ? "en" : "fr"),
+                    )
+                    .join(", ")
+                : "—"}
+            </dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-muted-foreground">{h.labelTexture}</dt>
+            <dd className="max-w-[60%] text-right font-medium">
+              {sheet.mouth_texture && sheet.mouth_texture.length > 0
+                ? sheet.mouth_texture
+                    .map((id) => {
+                      const hit = MOUTH_TEXTURE_OPTIONS.find((o) => o.id === id);
+                      return hit ? flow[hit.labelKey] : id;
+                    })
+                    .join(", ")
+                : "—"}
+            </dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-muted-foreground">{flow.mouthFinish}</dt>
+            <dd className="font-medium">
+              {sheet.mouth_finish === "short"
+                ? flow.finishShort
+                : sheet.mouth_finish === "medium"
+                  ? flow.finishMedium
+                  : sheet.mouth_finish === "long"
+                    ? flow.finishLong
+                    : sheet.mouth_finish ?? "—"}
+            </dd>
+          </div>
+        </dl>
 
         <div>
           <p className="mb-2 text-xs font-medium text-muted-foreground">
@@ -325,9 +352,14 @@ export function TastingSheetDetail({ sheet, h, flow, locale }: Props) {
         </p>
 
         {sheet.mouth_notes ? (
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            {sheet.mouth_notes}
-          </p>
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-muted-foreground">
+              {h.labelConclusion}
+            </p>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {sheet.mouth_notes}
+            </p>
+          </div>
         ) : null}
       </section>
     </div>
