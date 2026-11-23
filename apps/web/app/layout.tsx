@@ -4,6 +4,7 @@ import { Header } from "@/components/shared/header";
 import { LocaleProvider } from "@/lib/i18n/locale-context";
 import { getServerLocale } from "@/lib/i18n/server";
 import "./globals.css";
+import "@/styles/visual-system.css";
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
 import type { Locale } from "@/lib/i18n/config";
 import type { AopBrowseItem } from "@/features/vignoble/queries/aop-navigation.queries";
 import type { AppellationFavoriteLabels } from "./appellation-favorite-button";
@@ -33,31 +32,40 @@ export function AopBrowseCard({
   const isLinkable = href && !href.startsWith("/vignoble//");
 
   return (
-    <div className="group flex items-stretch overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-wine/20">
+    <div className="group flex items-stretch overflow-hidden border border-[var(--vs-line)] bg-[var(--vs-paper)] transition-colors hover:border-[var(--vs-ink)]/25">
       {isLinkable ? (
         <Link
           href={href}
-          className="flex min-w-0 flex-1 items-center justify-between gap-3 p-4"
+          className="flex min-w-0 flex-1 items-center justify-between gap-3 px-4 py-4 sm:px-5"
         >
           <div className="min-w-0">
-            <div className="font-heading text-base">{name}</div>
+            <div className="font-heading text-base font-medium text-[var(--vs-ink)] sm:text-lg">
+              {name}
+            </div>
             {hasContext ? (
-              <div className="mt-1 text-xs text-muted-foreground">{subline}</div>
+              <div className="mt-1 text-xs tracking-wide text-[var(--vs-sage)]">
+                {subline}
+              </div>
             ) : null}
           </div>
-          <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-wine" />
+          <span
+            aria-hidden
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--vs-sage)] text-[var(--vs-ink)] transition-transform group-hover:translate-x-0.5"
+          >
+            →
+          </span>
         </Link>
       ) : (
-        <div className="flex min-w-0 flex-1 items-center justify-between gap-3 p-4">
+        <div className="flex min-w-0 flex-1 items-center justify-between gap-3 px-4 py-4">
           <div className="min-w-0">
-            <div className="font-heading text-base">{name}</div>
+            <div className="font-heading text-base font-medium">{name}</div>
             {hasContext ? (
-              <div className="mt-1 text-xs text-muted-foreground">{subline}</div>
+              <div className="mt-1 text-xs text-[var(--vs-sage)]">{subline}</div>
             ) : null}
           </div>
         </div>
       )}
-      <div className="flex shrink-0 items-center border-l border-border/50 px-2">
+      <div className="flex shrink-0 items-center border-l border-[var(--vs-line)] px-2">
         <AppellationFavoriteButton
           appellationId={String(item.id)}
           regionSlug={item.region_slug}

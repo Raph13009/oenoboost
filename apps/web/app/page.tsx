@@ -1,16 +1,4 @@
 import Link from "next/link";
-import {
-  Brain,
-  ChevronRight,
-  CloudSun,
-  Grape as GrapeIcon,
-  Layers,
-  Map as MapIcon,
-  MapPin,
-  RotateCcw,
-  Sparkles,
-} from "lucide-react";
-import type { ReactNode } from "react";
 
 import { getCurrentUser } from "@/lib/auth/session";
 import { getContent } from "@/lib/i18n/get-content";
@@ -26,6 +14,11 @@ import { SoilFavoriteButton } from "@/features/sols/components/soil-favorite-but
 import type { SoilFavoriteLabels } from "@/features/sols/components/soil-favorite-button";
 import { DailyQuestionBubble } from "@/features/quiz/components/daily-question-bubble";
 import { DailyQuestionCta } from "@/features/quiz/components/daily-question-cta";
+import {
+  HomeKnowledgeExplorer,
+  type HomeKnowledgeItem,
+} from "@/features/home/components/home-knowledge-explorer";
+import { getRegions } from "@/features/vignoble/queries/get-regions";
 
 import { getFavoriteGrapesForUser } from "@/features/cepages/queries/favorites.queries";
 import type { FavoriteGrapeRow } from "@/features/cepages/queries/favorites.queries";
@@ -34,75 +27,76 @@ import type { FavoriteAppellationRow } from "@/features/vignoble/queries/aop-fav
 import { getFavoriteSoilsForUser } from "@/features/sols/queries/soil-favorites.queries";
 import type { FavoriteSoilRow } from "@/features/sols/queries/soil-favorites.queries";
 
-type QuizPill = {
-  href: string;
-  label: string;
-  icon: ReactNode;
-  featured?: boolean;
-};
+import "@/features/home/home-make.css";
 
 type FavoriteHomeItem =
   | { type: "grape"; row: FavoriteGrapeRow }
   | { type: "aop"; row: FavoriteAppellationRow }
   | { type: "soil"; row: FavoriteSoilRow };
 
-function ModuleCard({
-  href,
-  title,
-  icon,
-  subtitle,
-  tintClass,
-}: {
-  href: string;
-  title: string;
-  icon: ReactNode;
-  subtitle?: string;
-  tintClass: string;
-}) {
-  return (
-    <Link
-      href={href}
-      prefetch
-      className={`group relative flex min-h-[118px] flex-col overflow-hidden rounded-[28px] border border-white/70 px-3.5 py-3.5 shadow-[0_10px_22px_rgba(91,54,35,0.08)] transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_16px_28px_rgba(91,54,35,0.12)] active:scale-[0.985] md:min-h-[126px] md:px-4 md:py-4 ${tintClass}`}
-    >
-      <div className="pointer-events-none absolute inset-x-4 top-0 h-14 rounded-full bg-white/30 blur-2xl transition-transform duration-200 group-hover:translate-y-1" />
-      <div className="relative flex items-start justify-between gap-2">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/70 bg-white/75 text-wine shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-sm md:h-10 md:w-10">
-          {icon}
-        </div>
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/70 text-wine/70 transition-all duration-200 group-hover:bg-white/90 group-hover:text-wine group-hover:translate-x-0.5 md:h-8.5 md:w-8.5">
-          <ChevronRight className="h-3.5 w-3.5" strokeWidth={2} />
-        </div>
-      </div>
-      <div className="relative mt-4 min-w-0 max-w-[9rem] md:mt-5 md:max-w-[10rem]">
-        <h3 className="font-heading text-[0.95rem] font-semibold leading-tight tracking-tight text-foreground md:text-[1rem]">
-          {title}
-        </h3>
-        {subtitle ? (
-          <p className="mt-1 line-clamp-2 text-[0.74rem] leading-relaxed text-muted-foreground md:text-[0.78rem]">
-            {subtitle}
-          </p>
-        ) : null}
-      </div>
-    </Link>
-  );
-}
-
 export default async function HomePage() {
   const locale = await getServerLocale();
   const dict = await getDictionary(locale);
 
   const user = await getCurrentUser();
-  const [grapeRows, aopRows, soilRows] = user
-    ? await Promise.all([
-        getFavoriteGrapesForUser(user.id),
-        getFavoriteAppellationsForUser(user.id),
-        getFavoriteSoilsForUser(user.id),
-      ])
-    : [[], [], []];
+  const [grapeRows, aopRows, soilRows, regions] = await Promise.all([
+    user ? getFavoriteGrapesForUser(user.id) : Promise.resolve([]),
+    user ? getFavoriteAppellationsForUser(user.id) : Promise.resolve([]),
+    user ? getFavoriteSoilsForUser(user.id) : Promise.resolve([]),
+    getRegions(),
+  ]);
 
-  const favoritesCount =
-    grapeRows.length + aopRows.length + soilRows.length;
+  const publishedRegions = regions.filter((region) => region.status === "published");
+
+  const resolveRegionHref = (needles: string[], fallback: string) => {
+    const match = publishedRegions.find((region) => {
+      const nameFr = getContent(region, "name", "fr").toLowerCase();
+      const nameEn = getContent(region, "name", "en").toLowerCase();
+      const slug = region.slug.toLowerCase();
+      return needles.some(
+        (needle) =>
+          nameFr.includes(needle) ||
+          nameEn.includes(needle) ||
+          slug.includes(needle.replace(/\s+/g, "-")),
+      );
+    });
+    return match ? `/vignoble/${match.slug}` : fallback;
+  };
+
+  const showcaseRegions = [
+    {
+      key: "bourgogne",
+      name: "Bourgogne",
+      place: dict.home.regionBourgognePlace,
+      aop: dict.home.regionBourgogneAop,
+      grape: dict.home.regionBourgogneGrape,
+      image: "/images/regions/bourgogne.jpg",
+      href: resolveRegionHref(["bourgogne", "burgundy"], "/vignoble/regions"),
+    },
+    {
+      key: "bordeaux",
+      name: "Bordeaux",
+      place: dict.home.regionBordeauxPlace,
+      aop: dict.home.regionBordeauxAop,
+      grape: dict.home.regionBordeauxGrape,
+      image: "/images/regions/bordeaux.jpg",
+      href: resolveRegionHref(["bordeaux"], "/vignoble/regions"),
+    },
+    {
+      key: "rhone",
+      name: dict.home.regionRhoneName,
+      place: dict.home.regionRhonePlace,
+      aop: dict.home.regionRhoneAop,
+      grape: dict.home.regionRhoneGrape,
+      image: "/images/regions/rhone.jpg",
+      href: resolveRegionHref(
+        ["rhône", "rhone", "vallée du rhône", "vallee du rhone"],
+        "/vignoble/regions",
+      ),
+    },
+  ];
+
+  const favoritesCount = grapeRows.length + aopRows.length + soilRows.length;
 
   const favoriteItems: FavoriteHomeItem[] = favoritesCount
     ? [
@@ -166,26 +160,6 @@ export default async function HomePage() {
     },
   };
 
-  const quizPills: QuizPill[] = [
-    {
-      href: "/quiz?type=beginner",
-      label: locale === "en" ? "Beginner quiz" : "Quiz débutant",
-      icon: <Sparkles className="h-3.5 w-3.5" strokeWidth={2} />,
-    },
-    {
-      href: "/quiz?type=intermediate",
-      label: locale === "en" ? "Intermediate quiz" : "Quiz intermédiaire",
-      icon: <Brain className="h-3.5 w-3.5" strokeWidth={2} />,
-    },
-    {
-      href: "/quiz?type=expert",
-      label: locale === "en" ? "Expert quiz" : "Quiz expert",
-      icon: <Brain className="h-3.5 w-3.5" strokeWidth={2} />,
-    },
-  ];
-
-  const quizSectionTitle = dict.quiz.title;
-  const favoritesTitle = dict.nav.myFavorites;
   const dailyQuestionAuthCopy = {
     title: dict.cepages.favoriteAuthTitle,
     body:
@@ -196,153 +170,404 @@ export default async function HomePage() {
     register: dict.cepages.favoriteAuthRegister,
   };
 
+  const knowledgeItems: HomeKnowledgeItem[] = [
+    {
+      id: "aop",
+      href: "/vignoble/aop?from=home",
+      title: dict.home.moduleAopTitle,
+      subtitle: dict.home.moduleAopSubtitle,
+      filter: "aop",
+      accent: "wine",
+      icon: "⌁",
+      meta: dict.home.moduleAopMeta,
+    },
+    {
+      id: "cepages",
+      href: "/cepages",
+      title: dict.home.moduleCepagesTitle,
+      subtitle: dict.home.moduleCepagesSubtitle,
+      filter: "cepages",
+      accent: "sage",
+      icon: "♧",
+      meta: dict.home.moduleCepagesMeta,
+    },
+    {
+      id: "sols",
+      href: "/sols",
+      title: dict.home.moduleSolsTitle,
+      subtitle: dict.home.moduleSolsSubtitle,
+      filter: "sols",
+      accent: "wine",
+      icon: "≋",
+      meta: dict.home.moduleSolsMeta,
+    },
+    {
+      id: "climat",
+      href: "/climat",
+      title: dict.home.moduleClimatTitle,
+      subtitle: dict.home.moduleClimatSubtitle,
+      filter: "climats",
+      accent: "sage",
+      icon: "☼",
+      meta: dict.home.moduleClimatMeta,
+    },
+    {
+      id: "dictionnaire",
+      href: "/dictionnaire",
+      title: dict.home.moduleDictionnaireTitle,
+      subtitle: dict.home.moduleDictionnaireSubtitle,
+      filter: "vocabulaire",
+      accent: "wine",
+      icon: "Aa",
+      meta: dict.home.moduleDictionnaireMeta,
+    },
+  ];
+
+  const quizLevels = [
+    {
+      href: "/quiz?type=beginner",
+      level: locale === "en" ? "Beginner" : "Débutant",
+      eyebrow: dict.home.quizBeginnerEyebrow,
+      title: dict.home.quizBeginnerTitle,
+      text: dict.home.quizBeginnerText,
+      meta: dict.home.quizBeginnerMeta,
+      dot: "#8a9a7b",
+    },
+    {
+      href: "/quiz?type=intermediate",
+      level: locale === "en" ? "Intermediate" : "Intermédiaire",
+      eyebrow: dict.home.quizIntermediateEyebrow,
+      title: dict.home.quizIntermediateTitle,
+      text: dict.home.quizIntermediateText,
+      meta: dict.home.quizIntermediateMeta,
+      dot: "#fffdec",
+    },
+    {
+      href: "/quiz?type=expert",
+      level: locale === "en" ? "Expert" : "Expert",
+      eyebrow: dict.home.quizExpertEyebrow,
+      title: dict.home.quizExpertTitle,
+      text: dict.home.quizExpertText,
+      meta: dict.home.quizExpertMeta,
+      dot: "#7c2536",
+    },
+  ];
+
   return (
-    <div className="mx-auto flex w-full max-w-[760px] min-w-0 flex-col overflow-x-hidden pb-6">
-      <section className="mt-6 flex w-full min-w-0 flex-col gap-4">
-        <h2 className="font-heading text-[1.55rem] font-semibold tracking-tight text-foreground">
-          {locale === "en" ? "Modules" : "Modules"}
-        </h2>
-        <div className="grid grid-cols-2 gap-3.5 md:gap-4">
-          <ModuleCard
-            href="/vignoble"
-            title={dict.nav.vignoble}
-            icon={<MapIcon className="h-5 w-5" strokeWidth={1.6} />}
-            tintClass="bg-[linear-gradient(180deg,rgba(255,236,236,0.98),rgba(255,250,249,0.96))]"
+    <div className="home-make home-make-bleed -mt-5 pb-10">
+      <section className="home-make-hero" id="accueil" aria-labelledby="home-hero-title">
+        <div className="home-make-hero-media" aria-hidden="true">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/images/home-hero.jpg"
+            alt=""
+            width={1800}
+            height={1200}
           />
-          <ModuleCard
-            href="/cepages"
-            title={dict.nav.cepages}
-            icon={<GrapeIcon className="h-5 w-5" strokeWidth={1.6} />}
-            tintClass="bg-[linear-gradient(180deg,rgba(247,239,255,0.98),rgba(255,252,255,0.96))]"
-          />
-          <ModuleCard
-            href="/sols"
-            title={dict.nav.sols}
-            icon={<Layers className="h-5 w-5" strokeWidth={1.6} />}
-            tintClass="bg-[linear-gradient(180deg,rgba(246,236,225,0.98),rgba(255,251,245,0.96))]"
-          />
-          <ModuleCard
-            href="/climat"
-            title={dict.nav.climat}
-            icon={<CloudSun className="h-5 w-5" strokeWidth={1.6} />}
-            tintClass="bg-[linear-gradient(180deg,rgba(230,242,255,0.98),rgba(248,252,255,0.96))]"
-          />
-          <ModuleCard
-            href="/vinification"
-            title={dict.nav.vinification}
-            icon={<RotateCcw className="h-5 w-5" strokeWidth={1.6} />}
-            tintClass="bg-[linear-gradient(180deg,rgba(255,244,219,0.98),rgba(255,251,240,0.96))]"
-          />
+        </div>
+        <div className="home-make-hero-shade" aria-hidden="true" />
+        <div className="home-make-hero-content">
+          <p className="eyebrow eyebrow-light">{dict.home.heroEyebrow}</p>
+          <h1 id="home-hero-title">
+            {dict.home.heroTitleBefore}
+            <br />
+            {locale === "en" ? "through its " : "à travers ses "}
+            <em>{dict.home.heroTitleEmphasis}</em>
+          </h1>
+          <p className="max-w-[520px] font-heading text-[17px] leading-[1.7] text-[rgba(255,253,236,0.8)]">
+            {dict.home.heroCopy}
+          </p>
+          <a href="#explorer" className="home-make-primary">
+            {dict.home.cta} <span aria-hidden>→</span>
+          </a>
+        </div>
+        <a href="#explorer" className="home-make-scroll-cue">
+          <span>{dict.home.heroScroll}</span>
+          <span aria-hidden className="rotate-90 text-xl">
+            →
+          </span>
+        </a>
+        <p className="home-make-hero-credit">{dict.home.heroPhotoCredit}</p>
+        <span className="sr-only">{dict.home.heroImageAlt}</span>
+      </section>
+
+      <section
+        className="mx-auto grid max-w-[1440px] gap-10 px-[6vw] py-[5.5rem] md:grid-cols-2 md:gap-[10vw]"
+        aria-labelledby="home-intro-title"
+      >
+        <div>
+          <p className="eyebrow">{dict.home.introEyebrow}</p>
+          <h2
+            id="home-intro-title"
+            className="mt-5 font-heading text-[clamp(2.4rem,5vw,4.4rem)] font-medium leading-none tracking-[-0.04em]"
+          >
+            {dict.home.introTitleBefore}
+            <br />
+            {locale === "en" ? "with the " : "par la "}
+            <em className="italic">{dict.home.introTitleEmphasis}</em>
+          </h2>
+        </div>
+        <div className="max-w-[500px] md:pt-8">
+          <p className="font-heading text-[1.25rem] font-medium leading-[1.5]">
+            {dict.home.introLead}
+          </p>
+          <p className="mt-6 text-sm leading-[1.8] text-[var(--home-sage)]">
+            {dict.home.introBody}
+          </p>
         </div>
       </section>
 
-      <section className="relative mt-10 flex w-full min-w-0 flex-col gap-4 md:mt-12">
-        <div className="flex min-w-0 items-center justify-between gap-3">
-          <h2 className="min-w-0 font-heading text-[1.55rem] font-semibold tracking-tight text-foreground">
-            {quizSectionTitle}
-          </h2>
-          <div className="quiz-daily-bubble-float shrink-0">
-            <DailyQuestionBubble
-              href="/quiz/daily"
-              isLoggedIn={!!user}
-              title={dict.home.dailyQuestionTitle}
-              authCopy={dailyQuestionAuthCopy}
-            />
+      <section className="home-make-knowledge" id="explorer" aria-label={dict.home.searchAria}>
+        <HomeKnowledgeExplorer
+          items={knowledgeItems}
+          labels={{
+            searchPlaceholder: dict.home.searchPlaceholder,
+            searchAria: dict.home.searchAria,
+            searchClearAria: dict.home.searchClearAria,
+            searchEmpty: dict.home.searchEmpty,
+            filters: [
+              { id: "all", label: dict.home.filterAll },
+              { id: "aop", label: dict.home.filterAop },
+              { id: "cepages", label: dict.home.filterCepages },
+              { id: "sols", label: dict.home.filterSols },
+              { id: "climats", label: dict.home.filterClimats },
+              { id: "vocabulaire", label: dict.home.filterVocabulaire },
+            ],
+          }}
+        />
+      </section>
+
+      <section className="home-make-regions" id="regions" aria-labelledby="home-regions-title">
+        <div className="home-make-regions-heading">
+          <div>
+            <p className="eyebrow">{dict.home.regionsEyebrow}</p>
+            <h2 id="home-regions-title">
+              {dict.home.regionsTitleBefore}{" "}
+              <em className="italic">{dict.home.regionsTitleEmphasis}</em>
+            </h2>
+          </div>
+          <Link href="/vignoble/regions" prefetch className="home-make-regions-see-all">
+            {dict.home.regionsSeeAll} <span aria-hidden>→</span>
+          </Link>
+        </div>
+
+        <div className="home-make-region-grid">
+          {showcaseRegions.map((region, index) => (
+            <Link
+              key={region.key}
+              href={region.href}
+              prefetch
+              className="home-make-region-card"
+              aria-label={region.name}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={region.image}
+                alt={`Paysage viticole de ${region.name}`}
+                width={900}
+                height={1200}
+              />
+              <div className="region-overlay" aria-hidden />
+              <span className="region-index">0{index + 1}</span>
+              <div className="region-info">
+                <p>{region.place}</p>
+                <h3>{region.name}</h3>
+                <div className="region-meta">
+                  <span>{region.aop}</span>
+                  <span>{region.grape}</span>
+                </div>
+              </div>
+              <span className="region-arrow" aria-hidden>
+                →
+              </span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="home-make-quiz" id="quiz" aria-labelledby="home-quiz-title">
+        <div className="mx-auto mb-14 grid max-w-[1400px] gap-8 md:grid-cols-[1.3fr_0.7fr] md:items-end md:gap-[10vw]">
+          <div>
+            <p className="eyebrow eyebrow-light">{dict.home.quizEyebrow}</p>
+            <h2
+              id="home-quiz-title"
+              className="mt-4 font-heading text-[clamp(2.4rem,4.5vw,4.2rem)] font-medium leading-none tracking-[-0.04em]"
+            >
+              {dict.home.quizTitleBefore}{" "}
+              <em className="italic">{dict.home.quizTitleEmphasis}</em>
+              <br />
+              {dict.home.quizTitleAfter}
+            </h2>
+          </div>
+          <p className="max-w-[480px] font-heading text-base leading-[1.8] text-[var(--home-paper)]">
+            {dict.home.quizIntro}
+          </p>
+        </div>
+
+        <div className="home-make-quiz-levels">
+          {quizLevels.map((quiz, index) => (
+            <article key={quiz.href} className="home-make-quiz-level">
+              <div className="flex items-center justify-between text-[10px] tracking-[0.2em]">
+                <span
+                  className="h-2.5 w-2.5 rounded-full shadow-[0_0_0_5px_rgba(255,253,236,0.05)]"
+                  style={{ background: quiz.dot }}
+                  aria-hidden
+                />
+                <span>0{index + 1}</span>
+              </div>
+              <p className="mt-14 text-[9px] uppercase tracking-[0.2em] text-[var(--home-paper)]">
+                {quiz.eyebrow}
+              </p>
+              <h3>{quiz.level}</h3>
+              <h4>{quiz.title}</h4>
+              <p className="max-w-[320px] text-xs leading-[1.8] text-[var(--home-paper)]">
+                {quiz.text}
+              </p>
+              <footer className="mt-auto flex items-center justify-between border-t border-[rgba(255,253,236,0.11)] pt-6">
+                <span className="text-[9px] uppercase tracking-[0.12em]">{quiz.meta}</span>
+                <DailyQuestionCta
+                  href={quiz.href}
+                  isLoggedIn={!!user}
+                  label={`${dict.home.quizStart} ${quiz.level}`}
+                  authCopy={dailyQuestionAuthCopy}
+                  className="inline-flex items-center gap-3 text-[11px] text-[var(--home-paper)]"
+                >
+                  {dict.home.quizStart} <span aria-hidden>→</span>
+                </DailyQuestionCta>
+              </footer>
+            </article>
+          ))}
+        </div>
+
+        <div className="home-make-quiz-stats">
+          <div>
+            <strong>45</strong>
+            <span>{dict.home.quizStatQuestions}</span>
+          </div>
+          <div>
+            <strong>3</strong>
+            <span>{dict.home.quizStatLevels}</span>
+          </div>
+          <div>
+            <strong>∞</strong>
+            <span>{dict.home.quizStatLearn}</span>
           </div>
         </div>
-        <ul className="flex w-full min-w-0 list-none flex-col gap-3 p-0">
-          {quizPills.map((pill) => (
-            <li key={pill.href}>
-              <DailyQuestionCta
-                href={pill.href}
-                isLoggedIn={!!user}
-                label={pill.label}
-                authCopy={dailyQuestionAuthCopy}
-                className="group flex h-10.5 w-full min-w-0 max-w-full items-center justify-between gap-2.5 rounded-full border border-white/70 bg-white/75 px-3.5 text-[0.88rem] font-semibold text-foreground shadow-[0_8px_18px_rgba(91,54,35,0.06)] backdrop-blur-sm transition-colors duration-200 ease-out active:opacity-90 hover:border-primary/15 hover:bg-white"
-              >
-                <span className="flex min-w-0 items-center gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent/80 text-wine">
-                    {pill.icon}
-                  </span>
-                  <span className="truncate">{pill.label}</span>
-                </span>
-                <ChevronRight
-                  className="h-3.5 w-3.5 shrink-0 text-wine/70"
-                  strokeWidth={2}
-                />
-              </DailyQuestionCta>
-            </li>
-          ))}
-        </ul>
       </section>
 
       {favoritesCount > 0 ? (
-        <section className="mt-10 flex w-full min-w-0 flex-col gap-4 md:mt-12">
-          <h2 className="font-heading text-[1.55rem] font-semibold tracking-tight text-foreground">
-            {favoritesTitle}
-          </h2>
-          <div className="flex w-full min-w-0 gap-3 overflow-x-auto pb-1 no-scrollbar">
-            {favoriteItems.map((item) => {
-              if (item.type === "grape") {
-                const name = getContent(item.row.grape, "name", locale);
-                const typeLabel =
-                  item.row.grape.type === "red"
-                    ? dict.cepages.red
-                    : item.row.grape.type === "white"
-                      ? dict.cepages.white
-                      : dict.cepages.rose;
+        <section
+          className="bg-[var(--home-paper)] px-[5vw] py-16"
+          aria-labelledby="home-favorites-title"
+        >
+          <div className="mx-auto max-w-[1400px]">
+            <h2
+              id="home-favorites-title"
+              className="font-heading text-[clamp(2rem,3.5vw,3rem)] font-medium tracking-[-0.04em]"
+            >
+              {dict.nav.myFavorites}
+            </h2>
+            <div className="mt-8 flex w-full min-w-0 gap-3 overflow-x-auto pb-1 no-scrollbar">
+              {favoriteItems.map((item) => {
+                if (item.type === "grape") {
+                  const name = getContent(item.row.grape, "name", locale);
+                  const typeLabel =
+                    item.row.grape.type === "red"
+                      ? dict.cepages.red
+                      : item.row.grape.type === "white"
+                        ? dict.cepages.white
+                        : dict.cepages.rose;
 
-                return (
-                  <div
-                    key={`grape:${item.row.grape.id}`}
-                    className="shrink-0 w-[8.75rem] rounded-[22px] border border-white/70 bg-white/78 px-3 py-2.5 shadow-[0_8px_20px_rgba(91,54,35,0.08)] backdrop-blur-sm transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-white hover:shadow-[0_14px_28px_rgba(91,54,35,0.12)] active:scale-[0.985]"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <Link
-                          href={`/cepages/${item.row.grape.slug}?from=favorites`}
-                          prefetch
-                          className="block min-w-0"
-                          aria-label={name}
-                        >
-                        <div className="font-heading text-[0.92rem] font-semibold leading-tight truncate">
-                            {name}
+                  return (
+                    <div
+                      key={`grape:${item.row.grape.id}`}
+                      className="w-[8.75rem] shrink-0 border border-[var(--home-line)] bg-[var(--home-paper)] px-3 py-2.5 transition-transform duration-200 hover:-translate-y-0.5"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <Link
+                            href={`/cepages/${item.row.grape.slug}?from=favorites`}
+                            prefetch
+                            className="block min-w-0"
+                            aria-label={name}
+                          >
+                            <div className="truncate font-heading text-[0.92rem] font-semibold leading-tight">
+                              {name}
+                            </div>
+                          </Link>
+                          <div className="mt-2 text-xs font-medium text-[var(--home-sage)]">
+                            {typeLabel}
                           </div>
-                        </Link>
-                        <div className="mt-2 text-xs font-medium text-muted-foreground">
-                          {typeLabel}
+                        </div>
+                        <div className="shrink-0">
+                          <GrapeFavoriteButton
+                            grapeId={item.row.grape.id}
+                            grapeSlug={item.row.grape.slug}
+                            initialFavorited={true}
+                            isLoggedIn={!!user}
+                            labels={grapeFavoriteLabels}
+                            size="sm"
+                          />
                         </div>
                       </div>
-                      <div className="shrink-0">
-                        <GrapeFavoriteButton
-                          grapeId={item.row.grape.id}
-                          grapeSlug={item.row.grape.slug}
-                          initialFavorited={true}
-                          isLoggedIn={!!user}
-                          labels={grapeFavoriteLabels}
-                          size="sm"
-                        />
+                    </div>
+                  );
+                }
+
+                if (item.type === "aop") {
+                  const href = buildAopDetailHref(
+                    item.row.regionSlug,
+                    item.row.appellation.slug,
+                    {
+                      subregion: item.row.subregionSlug,
+                      from: "favorites",
+                    },
+                  );
+                  const name = item.row.appellation.name;
+
+                  return (
+                    <div
+                      key={`aop:${item.row.appellation.id}`}
+                      className="w-[8.75rem] shrink-0 border border-[var(--home-line)] bg-[var(--home-paper)] px-3 py-2.5 transition-transform duration-200 hover:-translate-y-0.5"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <Link
+                            href={href}
+                            prefetch
+                            className="block min-w-0"
+                            aria-label={name}
+                          >
+                            <div className="truncate font-heading text-[0.92rem] font-semibold leading-tight">
+                              {name}
+                            </div>
+                          </Link>
+                          <div className="mt-2 text-xs font-medium text-[var(--home-sage)]">
+                            AOP
+                          </div>
+                        </div>
+                        <div className="shrink-0">
+                          <AppellationFavoriteButton
+                            appellationId={String(item.row.appellation.id)}
+                            regionSlug={item.row.regionSlug}
+                            aopSlug={item.row.appellation.slug}
+                            subregionSlug={item.row.subregionSlug}
+                            initialFavorited={true}
+                            isLoggedIn={!!user}
+                            labels={aopFavoriteLabels}
+                            size="sm"
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              }
+                  );
+                }
 
-              if (item.type === "aop") {
-                const href = buildAopDetailHref(
-                  item.row.regionSlug,
-                  item.row.appellation.slug,
-                  {
-                    subregion: item.row.subregionSlug,
-                    from: "favorites",
-                  },
-                );
-                const name = item.row.appellation.name;
-
+                const href = `/sols/${item.row.soil.slug}?from=favorites`;
                 return (
                   <div
-                    key={`aop:${item.row.appellation.id}`}
-                    className="shrink-0 w-[8.75rem] rounded-[22px] border border-white/70 bg-white/78 px-3 py-2.5 shadow-[0_8px_20px_rgba(91,54,35,0.08)] backdrop-blur-sm transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-white hover:shadow-[0_14px_28px_rgba(91,54,35,0.12)] active:scale-[0.985]"
+                    key={`soil:${item.row.soil.id}`}
+                    className="w-[8.75rem] shrink-0 border border-[var(--home-line)] bg-[var(--home-paper)] px-3 py-2.5 transition-transform duration-200 hover:-translate-y-0.5"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
@@ -350,128 +575,79 @@ export default async function HomePage() {
                           href={href}
                           prefetch
                           className="block min-w-0"
-                          aria-label={name}
+                          aria-label={item.row.soil.name_fr}
                         >
-                          <div className="font-heading text-[0.92rem] font-semibold leading-tight truncate">
-                            {name}
+                          <div className="truncate font-heading text-[0.92rem] font-semibold leading-tight">
+                            {item.row.soil.name_fr}
                           </div>
                         </Link>
-                        <div className="mt-2 text-xs font-medium text-muted-foreground">
-                          AOP
+                        <div className="mt-2 text-xs font-medium text-[var(--home-sage)]">
+                          Sol
                         </div>
                       </div>
                       <div className="shrink-0">
-                        <AppellationFavoriteButton
-                          appellationId={String(item.row.appellation.id)}
-                          regionSlug={item.row.regionSlug}
-                          aopSlug={item.row.appellation.slug}
-                          subregionSlug={item.row.subregionSlug}
+                        <SoilFavoriteButton
+                          soilId={item.row.soil.id}
+                          soilSlug={item.row.soil.slug}
                           initialFavorited={true}
                           isLoggedIn={!!user}
-                          labels={aopFavoriteLabels}
-                          size="sm"
+                          labels={soilFavoriteLabels}
                         />
                       </div>
                     </div>
                   </div>
                 );
-              }
-
-              const href = `/sols/${item.row.soil.slug}?from=favorites`;
-              return (
-                <div
-                  key={`soil:${item.row.soil.id}`}
-                  className="shrink-0 w-[8.75rem] rounded-[22px] border border-white/70 bg-white/78 px-3 py-2.5 shadow-[0_8px_20px_rgba(91,54,35,0.08)] backdrop-blur-sm transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-white hover:shadow-[0_14px_28px_rgba(91,54,35,0.12)] active:scale-[0.985]"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <Link
-                        href={href}
-                        prefetch
-                        className="block min-w-0"
-                        aria-label={item.row.soil.name_fr}
-                      >
-                        <div className="font-heading text-[0.92rem] font-semibold leading-tight truncate">
-                          {item.row.soil.name_fr}
-                        </div>
-                      </Link>
-                      <div className="mt-2 text-xs font-medium text-muted-foreground">
-                        Sol
-                      </div>
-                    </div>
-                    <div className="shrink-0">
-                      <SoilFavoriteButton
-                        soilId={item.row.soil.id}
-                        soilSlug={item.row.soil.slug}
-                        initialFavorited={true}
-                        isLoggedIn={!!user}
-                        labels={soilFavoriteLabels}
-                      />
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+              })}
+            </div>
           </div>
         </section>
       ) : null}
 
-      <section className="mt-10 flex w-full min-w-0 flex-col gap-4 md:mt-12">
-        <h2 className="font-heading text-[1.55rem] font-semibold tracking-tight text-foreground">
-          {dict.vignoble.discover}
-        </h2>
-        <div className="grid grid-cols-2 gap-3.5 md:gap-4">
-          <Link
-            href="/vignoble/aop?from=home"
-            prefetch
-            className="group relative flex min-h-[116px] flex-col overflow-hidden rounded-[28px] border border-white/70 px-3.5 py-3.5 shadow-[0_10px_22px_rgba(91,54,35,0.08)] transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_16px_28px_rgba(91,54,35,0.12)] active:scale-[0.985] bg-[linear-gradient(180deg,rgba(255,240,237,0.98),rgba(255,252,250,0.96))]"
-            aria-label="AOP"
-          >
-            <div className="pointer-events-none absolute inset-x-4 top-0 h-14 rounded-full bg-white/30 blur-2xl" />
-            <div className="relative flex items-start justify-between gap-2">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/70 bg-white/75 text-wine">
-                <MapPin className="h-5 w-5" strokeWidth={1.6} />
-              </div>
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/70 text-wine/70 transition-all duration-200 group-hover:bg-white/90 group-hover:text-wine group-hover:translate-x-0.5">
-                <ChevronRight className="h-3.5 w-3.5" strokeWidth={2} />
-              </div>
-            </div>
-            <div className="relative mt-4 min-w-0 max-w-[8.75rem]">
-              <div className="font-heading text-[0.95rem] font-semibold leading-tight tracking-tight">
-                AOP
-              </div>
-              <div className="mt-1 text-[0.74rem] leading-relaxed text-muted-foreground">
-                {locale === "en" ? "Browse appellations" : "Explorer les appellations"}
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            href="/cepages"
-            prefetch
-            className="group relative flex min-h-[116px] flex-col overflow-hidden rounded-[28px] border border-white/70 px-3.5 py-3.5 shadow-[0_10px_22px_rgba(91,54,35,0.08)] transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_16px_28px_rgba(91,54,35,0.12)] active:scale-[0.985] bg-[linear-gradient(180deg,rgba(245,239,255,0.98),rgba(255,252,255,0.96))]"
-            aria-label={dict.nav.cepages}
-          >
-            <div className="pointer-events-none absolute inset-x-4 top-0 h-14 rounded-full bg-white/30 blur-2xl" />
-            <div className="relative flex items-start justify-between gap-2">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/70 bg-white/75 text-wine">
-                <GrapeIcon className="h-5 w-5" strokeWidth={1.6} />
-              </div>
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/70 text-wine/70 transition-all duration-200 group-hover:bg-white/90 group-hover:text-wine group-hover:translate-x-0.5">
-                <ChevronRight className="h-3.5 w-3.5" strokeWidth={2} />
-              </div>
-            </div>
-            <div className="relative mt-4 min-w-0 max-w-[8.75rem]">
-              <div className="font-heading text-[0.95rem] font-semibold leading-tight tracking-tight">
-                Cépage
-              </div>
-              <div className="mt-1 text-[0.74rem] leading-relaxed text-muted-foreground">
-                {locale === "en" ? "Discover grape varieties" : "Découvrir les cépages"}
-              </div>
-            </div>
-          </Link>
-        </div>
+      <section className="home-make-quote" aria-label={dict.home.quoteAuthor}>
+        <p>
+          {dict.home.quoteTextLine1}
+          <br />
+          {dict.home.quoteTextLine2}
+        </p>
+        <span>{dict.home.quoteAuthor}</span>
       </section>
+
+      <footer className="home-make-footer">
+        <div className="home-make-footer-brand">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.png"
+            alt="OenoBoost"
+            width={48}
+            height={48}
+            className="home-make-footer-logo"
+          />
+          <span>
+            <strong>{dict.home.footerBrand}</strong>
+            <small>{dict.home.footerBrandSub}</small>
+          </span>
+        </div>
+        <p className="home-make-footer-tagline">{dict.home.footerTagline}</p>
+        <nav className="home-make-footer-links" aria-label="Footer">
+          <Link href="/vignoble/aop?from=home">{dict.home.footerLinkAop}</Link>
+          <Link href="/cepages">{dict.home.footerLinkCepages}</Link>
+          <Link href="/sols">{dict.home.footerLinkSols}</Link>
+          <Link href="/quiz">{dict.home.footerLinkQuiz}</Link>
+          <Link href="/dictionnaire">{dict.home.footerLinkGlossaire}</Link>
+        </nav>
+        <small className="home-make-footer-legal">{dict.home.footerLegal}</small>
+      </footer>
+
+      <div className="home-make-daily">
+        <DailyQuestionBubble
+          href="/quiz/daily"
+          isLoggedIn={!!user}
+          title={dict.home.dailyQuestionTitle}
+          authCopy={dailyQuestionAuthCopy}
+          variant="fab"
+          subscribersLabel={dict.home.quizDailySubscribers}
+        />
+      </div>
     </div>
   );
 }

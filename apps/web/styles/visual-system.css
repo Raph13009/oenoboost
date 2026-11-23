@@ -1,0 +1,95 @@
+/**
+ * Shared visual foundations for Issue #33 (Figma Make + tasting Œil).
+ * Additive tokens only — does not rewrite the global app background.
+ */
+:root {
+  --vs-ink: #7c2736;
+  --vs-ink-deep: #5e1d29;
+  --vs-paper: #fffdec;
+  --vs-cream: #f7f4ed;
+  --vs-sage: #8a9a7b;
+  --vs-line: rgba(124, 39, 54, 0.18);
+  --vs-muted: #786c62;
+  --vs-chip: #efeae0;
+  --vs-card: #fffefa;
+  --vs-border: #e0dace;
+}
+
+@theme inline {
+  --color-sage: var(--vs-sage);
+  --color-paper: var(--vs-paper);
+  --color-cream-soft: var(--vs-cream);
+}
+
+.vs-page {
+  background: var(--vs-cream);
+  color: #38292b;
+}
+
+.vs-bleed {
+  width: 100vw;
+  max-width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+}
+
+.vs-eyebrow {
+  text-transform: uppercase;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  color: var(--vs-muted);
+}
+
+.vs-card {
+  background: var(--vs-card);
+  border: 1px solid var(--vs-border);
+  border-radius: 14px;
+}
+
+.vs-chip {
+  border: 1px solid var(--vs-border);
+  background: #fff;
+  border-radius: 999px;
+  min-height: 44px;
+  padding: 0.65rem 1rem;
+  font-size: 0.8rem;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.vs-chip[data-active="true"] {
+  background: var(--vs-ink);
+  border-color: var(--vs-ink);
+  color: var(--vs-paper);
+}
+
+.vs-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-height: 48px;
+  padding: 0 1.35rem;
+  background: var(--vs-ink);
+  color: var(--vs-paper);
+  border: 0;
+  font-size: 0.875rem;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.vs-btn-primary:hover {
+  background: var(--vs-ink-deep);
+}
+
+.vs-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 48px;
+  padding: 0 1.2rem;
+  background: transparent;
+  border: 1px solid var(--vs-border);
+  color: #38292b;
+  font-size: 0.875rem;
+}
