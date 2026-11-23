@@ -710,6 +710,10 @@ const en: Dictionary = {
     footerLinkSols: "Soils & climates",
     footerLinkQuiz: "Quiz",
     footerLinkGlossaire: "Glossary",
+    footerLegalNav: "Legal",
+    footerLinkMentions: "Legal notice",
+    footerLinkCgv: "Terms",
+    footerLinkPrivacy: "Privacy",
     footerLegal:
       "© 2026 OenoBoost · Excessive drinking is dangerous for your health.",
   },
@@ -783,8 +787,9 @@ const en: Dictionary = {
     deleteAccount: "Delete my account",
     deleteAccountTitle: "Account deletion",
     deleteAccountBody:
-      "To permanently delete your account, send an email to {{email}} stating your request and the email address on your account. Your account will be removed within 30 business days after confirmation.",
-    deleteAccountAck: "Got it",
+      "To request deletion of your account, email {{email}} stating your request and the email address on your account.\n\nAfter confirmation, personal data linked to your OenoBoost account (profile, tastings, favourites, quizzes, related notes) is intended to be deleted within 30 business days.\n\nBilling and subscription records retained by Stripe, or required for accounting / tax duties, are not erased by this process.",
+    deleteAccountEmailCta: "Send request by email",
+    deleteAccountAck: "Close",
   },
 };
 

@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { useLocale } from "@/lib/i18n/locale-context";
 import frDict from "@/lib/i18n/dictionaries/fr";
 import enDict from "@/lib/i18n/dictionaries/en";
+import { LegalInlineNotice } from "@/components/legal/legal-inline-notice";
+import { getLegalBundle } from "@/content/legal";
 import { signUpAction } from "@/features/auth/actions";
 
 type RegisterFormProps = {
@@ -20,6 +22,7 @@ export function RegisterForm({ afterAuthPath: afterAuthPathProp }: RegisterFormP
   const router = useRouter();
   const { locale } = useLocale();
   const dict = locale === "en" ? enDict : frDict;
+  const legal = getLegalBundle(locale);
 
   const afterAuthPath = afterAuthPathProp ?? null;
   const loginHref = useMemo(() => {
@@ -150,6 +153,20 @@ export function RegisterForm({ afterAuthPath: afterAuthPathProp }: RegisterFormP
       {error && (
         <p className="text-sm text-destructive">{error}</p>
       )}
+
+      <LegalInlineNotice
+        template={legal.signupNotice}
+        links={{
+          mentions: {
+            href: "/mentions-legales",
+            label: legal.signupMentionsLabel,
+          },
+          privacy: {
+            href: "/confidentialite",
+            label: legal.signupPrivacyLabel,
+          },
+        }}
+      />
 
       <Button type="submit" disabled={loading} className="mt-2 w-full">
         {loading ? dict.common.loading : dict.auth.registerButton}
