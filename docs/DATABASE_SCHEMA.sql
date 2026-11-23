@@ -325,3 +325,36 @@ CREATE INDEX climate_grape_link_grape_idx
 
 -- RPC: FeatureCollection of wine_regions colored by primary climate (+ secondary slugs).
 -- Signature: get_climate_map_geojson() → jsonb
+
+-- ---------------------------------------------------------------------------
+-- Tasting sheets (user tasting records) — issue #34 columns highlighted
+-- ---------------------------------------------------------------------------
+CREATE TABLE public.tasting_sheets (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  wine_name text NULL,
+  vintage int4 NULL,
+  wine_type text NULL CHECK (wine_type IS NULL OR wine_type IN ('white', 'red', 'rose')),
+  eye_color text NULL,
+  eye_reflets text NULL,
+  eye_robe text NULL,
+  eye_intensity text NULL,
+  eye_tears text NULL,
+  eye_notes text NULL,
+  nose_first_nose text NULL,
+  nose_second_nose text NULL,
+  nose_aroma_families text[] NULL,
+  nose_intensity text NULL,
+  nose_notes text NULL,
+  mouth_attack text NULL,
+  mouth_mid text NULL,
+  mouth_finish text NULL,
+  mouth_acidity numeric NULL,
+  mouth_tannins numeric NULL,
+  mouth_alcohol numeric NULL,
+  mouth_sugar numeric NULL,
+  mouth_length_caudalie numeric NULL,
+  mouth_notes text NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);

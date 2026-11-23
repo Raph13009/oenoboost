@@ -24,7 +24,9 @@ export async function saveTastingSheetAction(
 
   const row = {
     user_id: user.id,
+    wine_type: payload.wine_type ?? null,
     eye_color: payload.eye_color,
+    eye_reflets: payload.eye_reflets ?? null,
     eye_robe: payload.eye_robe,
     eye_intensity: payload.eye_intensity,
     eye_tears: payload.eye_tears,

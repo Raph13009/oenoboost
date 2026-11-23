@@ -36,6 +36,8 @@ function loadDraft(): TastingDraft {
       ...base,
       ...parsed,
       wine_origin: parsed.wine_origin ?? "",
+      wine_type: parsed.wine_type ?? null,
+      eye_reflets: parsed.eye_reflets ?? null,
       nose_aroma_families: parsed.nose_aroma_families ?? [],
     };
   } catch {

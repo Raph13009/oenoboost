@@ -70,6 +70,20 @@ export function TastingSheetDetail({ sheet, h, flow, locale }: Props) {
       ? flow[colorLabelKey(sheet.eye_color) as keyof Dictionary["tastingFlow"]]
       : sheet.eye_color ?? "—";
 
+  const refletsText =
+    sheet.eye_reflets && isWineColorId(sheet.eye_reflets)
+      ? flow[colorLabelKey(sheet.eye_reflets) as keyof Dictionary["tastingFlow"]]
+      : sheet.eye_reflets ?? "—";
+
+  const wineTypeText =
+    sheet.wine_type === "white"
+      ? flow.wineTypeWhite
+      : sheet.wine_type === "red"
+        ? flow.wineTypeRed
+        : sheet.wine_type === "rose"
+          ? flow.wineTypeRose
+          : "—";
+
   const robe = (() => {
     const v = parseLimpidity(sheet.eye_robe);
     if (v === "limpid") return flow.limpidClear;
@@ -174,8 +188,16 @@ export function TastingSheetDetail({ sheet, h, flow, locale }: Props) {
         </h2>
         <dl className="grid gap-2 text-sm">
           <div className="flex justify-between gap-4">
+            <dt className="text-muted-foreground">{h.labelWineType}</dt>
+            <dd className="font-medium">{wineTypeText}</dd>
+          </div>
+          <div className="flex justify-between gap-4">
             <dt className="text-muted-foreground">{h.labelColor}</dt>
             <dd className="font-medium">{colorText}</dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-muted-foreground">{h.labelReflets}</dt>
+            <dd className="font-medium">{refletsText}</dd>
           </div>
           <div className="flex justify-between gap-4">
             <dt className="text-muted-foreground">{flow.labelRobe}</dt>

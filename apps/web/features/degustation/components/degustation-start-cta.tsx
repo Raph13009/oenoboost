@@ -7,7 +7,6 @@ import {
   FavoritesAuthModal,
   type FavoritesAuthModalCopy,
 } from "@/components/shared/favorites-auth-modal";
-import { buttonVariants } from "@/components/ui/button-variants";
 import { cn } from "@/lib/utils";
 
 const START_PATH = "/degustation/vin/start";
@@ -36,17 +35,16 @@ export function DegustationStartCta({
     [],
   );
 
+  const epureCta =
+    "inline-flex h-11 min-w-[min(100%,18rem)] items-center justify-between gap-6 rounded-[6px] bg-[#752e42] px-[22px] text-[13px] font-medium text-white hover:opacity-95";
+
   if (isLoggedIn) {
     return (
-      <Link
-        href={START_PATH}
-        className={cn(
-          buttonVariants({ variant: "default", size: "lg" }),
-          "min-w-[min(100%,18rem)] bg-wine px-8 text-primary-foreground hover:opacity-90 sm:px-10",
-          className,
-        )}
-      >
-        {ctaLabel}
+      <Link href={START_PATH} className={cn(epureCta, className)}>
+        <span>{ctaLabel}</span>
+        <span aria-hidden className="text-[20px] font-normal">
+          →
+        </span>
       </Link>
     );
   }
@@ -56,13 +54,12 @@ export function DegustationStartCta({
       <button
         type="button"
         onClick={() => setAuthOpen(true)}
-        className={cn(
-          buttonVariants({ variant: "default", size: "lg" }),
-          "min-w-[min(100%,18rem)] bg-wine px-8 text-primary-foreground hover:opacity-90 sm:px-10",
-          className,
-        )}
+        className={cn(epureCta, className)}
       >
-        {ctaLabel}
+        <span>{ctaLabel}</span>
+        <span aria-hidden className="text-[20px] font-normal">
+          →
+        </span>
       </button>
       <FavoritesAuthModal
         open={authOpen}

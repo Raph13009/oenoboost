@@ -13,9 +13,11 @@ import {
 } from "@/features/degustation/tasting/eye-observations";
 import { useTastingFlow } from "@/features/degustation/tasting/tasting-flow-context";
 import {
-  EPURE_EYE_COLORS,
   colorLabelKey,
+  colorsForWineType,
+  isWineTypeId,
   type WineColorId,
+  type WineTypeId,
 } from "@/features/degustation/tasting/wine-colors";
 import type { Dictionary } from "@/lib/i18n/dictionaries/fr";
 import { cn } from "@/lib/utils";
@@ -59,10 +61,13 @@ export function EyeTastingClient({ labels }: Props) {
 
   useEffect(() => {
     if (!hydrated) return;
-    if (!draft.wine_name.trim()) {
+    if (!draft.wine_name.trim() || !isWineTypeId(draft.wine_type)) {
       router.replace("/degustation/vin/start");
     }
-  }, [hydrated, draft.wine_name, router]);
+  }, [hydrated, draft.wine_name, draft.wine_type, router]);
+
+  const wineType = draft.wine_type as WineTypeId | null;
+  const palette = wineType ? colorsForWineType(wineType) : [];
 
   const limpidity = parseLimpidity(draft.eye_robe);
   const intensity = parseIntensity(draft.eye_intensity);
@@ -75,6 +80,18 @@ export function EyeTastingClient({ labels }: Props) {
   const selectedColorLabel = draft.eye_color
     ? colorLabel(draft.eye_color as WineColorId)
     : null;
+  const selectedRefletsLabel = draft.eye_reflets
+    ? colorLabel(draft.eye_reflets as WineColorId)
+    : null;
+
+  const wineTypeLabel =
+    wineType === "white"
+      ? labels.wineTypeWhite
+      : wineType === "red"
+        ? labels.wineTypeRed
+        : wineType === "rose"
+          ? labels.wineTypeRose
+          : labels.epureWineTypeRed;
 
   const intensityLabel =
     intensity === "light"
@@ -95,11 +112,25 @@ export function EyeTastingClient({ labels }: Props) {
           : null;
 
   const impression = useMemo(() => {
-    if (!selectedColorLabel && !intensityLabel && !limpidityLabel) {
+    if (
+      !selectedColorLabel &&
+      !selectedRefletsLabel &&
+      !intensityLabel &&
+      !limpidityLabel
+    ) {
       return labels.epureImpressionEmpty;
     }
     const colorBit = selectedColorLabel
-      ? labels.epureImpressionColor.replace("{color}", selectedColorLabel.toLowerCase())
+      ? labels.epureImpressionColor.replace(
+          "{color}",
+          selectedColorLabel.toLowerCase(),
+        )
+      : null;
+    const refletsBit = selectedRefletsLabel
+      ? labels.epureImpressionReflets.replace(
+          "{reflets}",
+          selectedRefletsLabel.toLowerCase(),
+        )
       : null;
     const intBit = intensityLabel
       ? labels.epureImpressionIntensity.replace(
@@ -113,13 +144,16 @@ export function EyeTastingClient({ labels }: Props) {
           limpidityLabel.toLowerCase(),
         )
       : null;
-    const parts = [colorBit, intBit, limBit].filter(Boolean);
+    const parts = [colorBit, refletsBit, intBit, limBit].filter(Boolean);
     if (parts.length === 0) return labels.epureImpressionEmpty;
     if (parts.length === 1) return `« ${parts[0]}. »`;
     if (parts.length === 2) return `« ${parts[0]}, ${parts[1]}. »`;
-    return `« ${parts[0]}, ${parts[1]},\net ${parts[2]}. »`;
+    const last = parts[parts.length - 1];
+    const head = parts.slice(0, -1).join(", ");
+    return `« ${head},\net ${last}. »`;
   }, [
     selectedColorLabel,
+    selectedRefletsLabel,
     intensityLabel,
     limpidityLabel,
     labels,
@@ -137,7 +171,7 @@ export function EyeTastingClient({ labels }: Props) {
     window.setTimeout(() => setDraftFlash(false), 2200);
   };
 
-  if (!hydrated || !draft.wine_name.trim()) {
+  if (!hydrated || !draft.wine_name.trim() || !wineType) {
     return (
       <div className="epure-page vs-bleed -mx-6 -mt-5 min-h-[calc(100dvh-3.5rem)] lg:-mx-8" />
     );
@@ -274,10 +308,15 @@ export function EyeTastingClient({ labels }: Props) {
           <p className="text-[16px] font-semibold text-[#3b2c2b]">
             {labels.epureColorQ}
           </p>
-          <p className="mt-2 text-[12px] text-[#80716b]">{labels.epureColorLead}</p>
+          <p className="mt-2 text-[12px] text-[#80716b]">
+            {labels.epureColorLeadFiltered.replace(
+              "{wineType}",
+              wineTypeLabel.toLowerCase(),
+            )}
+          </p>
 
           <div className="mt-5 grid grid-cols-3 gap-3 sm:grid-cols-6">
-            {EPURE_EYE_COLORS.map((c) => {
+            {palette.map((c) => {
               const active = draft.eye_color === c.id;
               return (
                 <button
@@ -296,23 +335,68 @@ export function EyeTastingClient({ labels }: Props) {
                       ✓
                     </span>
                   ) : null}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={c.asset}
-                    alt=""
-                    width={44}
-                    height={44}
-                    className="size-11"
+                  <span
+                    className="size-11 rounded-full shadow-inner"
+                    style={{ backgroundColor: c.hex }}
+                    aria-hidden
                   />
                   <span
                     className={cn(
-                      "mt-3 text-[12px]",
+                      "mt-3 px-1 text-center text-[11px] leading-tight",
                       active
                         ? "font-semibold text-[#752e42]"
                         : "font-normal text-[#756a64]",
                     )}
                   >
-                    {labels[c.labelKey]}
+                    {colorLabel(c.id)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="my-6 h-px bg-[#ece6df]" />
+
+          <p className="text-[16px] font-semibold text-[#3b2c2b]">
+            {labels.epureRefletsQ}
+          </p>
+          <p className="mt-2 text-[12px] text-[#80716b]">
+            {labels.epureRefletsLead}
+          </p>
+          <div className="mt-5 grid grid-cols-3 gap-3 sm:grid-cols-6">
+            {palette.map((c) => {
+              const active = draft.eye_reflets === c.id;
+              return (
+                <button
+                  key={`reflet-${c.id}`}
+                  type="button"
+                  onClick={() => patch({ eye_reflets: c.id })}
+                  className={cn(
+                    "relative flex h-[101px] flex-col items-center rounded-[8px] pt-3",
+                    active
+                      ? "border border-[#752e42] bg-[#faf2f1]"
+                      : "bg-white",
+                  )}
+                >
+                  {active ? (
+                    <span className="absolute right-2 top-1.5 text-[11px] font-semibold text-[#752e42]">
+                      ✓
+                    </span>
+                  ) : null}
+                  <span
+                    className="size-11 rounded-full ring-2 ring-white/80 ring-offset-1 shadow-inner"
+                    style={{ backgroundColor: c.hex }}
+                    aria-hidden
+                  />
+                  <span
+                    className={cn(
+                      "mt-3 px-1 text-center text-[11px] leading-tight",
+                      active
+                        ? "font-semibold text-[#752e42]"
+                        : "font-normal text-[#756a64]",
+                    )}
+                  >
+                    {colorLabel(c.id)}
                   </span>
                 </button>
               );
@@ -411,7 +495,7 @@ export function EyeTastingClient({ labels }: Props) {
             ) : null}
             <div className="mt-4 flex items-center justify-between gap-3">
               <span className="inline-flex h-[25px] items-center rounded-[4px] bg-[#e4d6d3] px-3 text-[10px] font-medium text-[#752e42]">
-                {labels.epureWineTypeRed}
+                {wineTypeLabel}
               </span>
               <Link
                 href="/degustation/vin/start"

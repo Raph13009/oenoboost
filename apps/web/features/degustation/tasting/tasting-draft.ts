@@ -1,12 +1,14 @@
 import type { TastingSheetInsert } from "@/types/database";
+import type { WineTypeId } from "@/features/degustation/tasting/wine-colors";
 
 /** Brouillon UI (millésime saisi en string, converti en nombre à l’enregistrement). */
 export type TastingDraft = Omit<
   TastingSheetInsert,
-  "wine_name" | "vintage"
+  "wine_name" | "vintage" | "wine_type"
 > & {
   wine_name: string;
   vintage: string;
+  wine_type: WineTypeId | null;
   /** Affiché dans la carte « Dans votre verre » (session only). */
   wine_origin: string;
 };
@@ -16,7 +18,9 @@ export function createEmptyTastingDraft(): TastingDraft {
     wine_name: "",
     vintage: "",
     wine_origin: "",
+    wine_type: null,
     eye_color: null,
+    eye_reflets: null,
     eye_robe: null,
     eye_intensity: null,
     eye_tears: null,
@@ -47,7 +51,9 @@ export function draftToInsert(d: TastingDraft): TastingSheetInsert & {
   return {
     wine_name: d.wine_name.trim() || null,
     vintage: Number.isFinite(year) ? year : null,
+    wine_type: d.wine_type,
     eye_color: d.eye_color,
+    eye_reflets: d.eye_reflets,
     eye_robe: d.eye_robe,
     eye_intensity: d.eye_intensity,
     eye_tears: d.eye_tears,
@@ -69,4 +75,4 @@ export function draftToInsert(d: TastingDraft): TastingSheetInsert & {
   };
 }
 
-export const STORAGE_KEY = "oenoboost-tasting-draft-v1";
+export const STORAGE_KEY = "oenoboost-tasting-draft-v2";
