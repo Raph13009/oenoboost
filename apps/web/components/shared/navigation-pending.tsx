@@ -5,6 +5,8 @@ import { usePathname, useSearchParams } from "next/navigation";
 
 import { RouteLoadingSkeleton } from "@/components/shared/route-loading-skeleton";
 
+const PENDING_TIMEOUT_MS = 12_000;
+
 function isModifiedClick(event: MouseEvent) {
   return event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
 }
@@ -20,6 +22,11 @@ function isInternalAppHref(href: string, origin: string) {
   }
 }
 
+function unlockBodyScroll() {
+  document.body.style.removeProperty("overflow");
+  document.documentElement.style.removeProperty("overflow");
+}
+
 function NavigationPendingInner() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -27,6 +34,7 @@ function NavigationPendingInner() {
 
   useEffect(() => {
     setPending(false);
+    unlockBodyScroll();
   }, [pathname, searchParams]);
 
   useEffect(() => {
@@ -64,11 +72,20 @@ function NavigationPendingInner() {
   }, []);
 
   useEffect(() => {
-    if (!pending) return;
-    const previous = document.body.style.overflow;
+    if (!pending) {
+      unlockBodyScroll();
+      return;
+    }
+
     document.body.style.overflow = "hidden";
+    const timeout = window.setTimeout(() => {
+      setPending(false);
+      unlockBodyScroll();
+    }, PENDING_TIMEOUT_MS);
+
     return () => {
-      document.body.style.overflow = previous;
+      window.clearTimeout(timeout);
+      unlockBodyScroll();
     };
   }, [pending]);
 

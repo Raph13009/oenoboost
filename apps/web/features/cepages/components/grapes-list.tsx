@@ -2,24 +2,32 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { stripHtmlToText } from "@/components/shared/rich-text-utils";
 import { getContent } from "@/lib/i18n/get-content";
 import type { Locale } from "@/lib/i18n/config";
 import type { Grape } from "../types";
 import type { GrapeFavoriteLabels } from "./grape-favorite-button";
 import { GrapeFavoriteButton } from "./grape-favorite-button";
 
+function plainField(input: string | null) {
+  if (!input) return "";
+  return stripHtmlToText(input);
+}
+
 function extractRegionTokens(input: string | null) {
-  if (!input) return [];
-  return input
+  const plain = plainField(input);
+  if (!plain) return [];
+  return plain
     .split(/[,;/|]/g)
     .map((r) => r.trim())
     .filter(Boolean);
 }
 
 function shortText(input: string | null, max = 80) {
-  if (!input) return "...";
-  if (input.length <= max) return input;
-  return `${input.slice(0, max).trim()}...`;
+  const plain = plainField(input);
+  if (!plain) return "...";
+  if (plain.length <= max) return plain;
+  return `${plain.slice(0, max).trim()}...`;
 }
 
 type GrapesListProps = {
@@ -66,9 +74,9 @@ export function GrapesList({
     return grapes.filter((grape) => {
       const nameFr = grape.name_fr.toLowerCase();
       const nameEn = grape.name_en.toLowerCase();
-      const textRegion = (
-        locale === "fr" ? grape.production_regions_fr : grape.production_regions_en
-      )?.toLowerCase();
+      const textRegion = plainField(
+        locale === "fr" ? grape.production_regions_fr : grape.production_regions_en,
+      ).toLowerCase();
 
       const matchesSearch = !q || nameFr.includes(q) || nameEn.includes(q);
       const matchesRegion =
