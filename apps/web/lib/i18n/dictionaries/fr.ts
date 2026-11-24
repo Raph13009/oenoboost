@@ -906,7 +906,7 @@ const fr = {
     na: "...",
     back: "Retour",
     close: "Fermer",
-    copyProtected: "Contenu protégé — consultation uniquement.",
+    copyProtected: "Contenu protégé, consultation uniquement.",
   },
   profile: {
     plan: "Offre",
