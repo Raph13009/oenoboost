@@ -843,7 +843,7 @@ const fr = {
     quizStatLevels: "niveaux de difficulté",
     quizStatLearn: "occasions d’apprendre",
     quoteTextLine1: "« Le vin est le professeur de goût,",
-    quoteTextLine2: "le libérateur de l’esprit. »",
+    quoteTextLine2: "le libérateur de l’esprit.\u00A0»",
     quoteAuthor: "Paul Claudel",
     discoverTitle: "Découvrir",
     footerTagline: "Un voyage documenté au cœur des terroirs français.",
@@ -919,6 +919,7 @@ const fr = {
     logout: "Se déconnecter",
     settings: "Réglages",
     subscription: "Abonnement",
+    upgradeToPremium: "Passer à Premium",
     manageSubscription: "Gérer mon abonnement",
     cancelSubscription: "Résilier l'abonnement",
     cancelSubscriptionConfirm: "Résilier votre abonnement ?",
@@ -931,6 +932,10 @@ const fr = {
       "Votre abonnement a bien été résilié. Votre offre est maintenant free.",
     subscriptionCancelErrorBanner:
       "Impossible de résilier l'abonnement pour le moment. Réessayez dans quelques instants.",
+    billingNeedPremiumBanner:
+      "Aucun abonnement Premium actif n'est lié à ce compte. Passez à Premium pour continuer.",
+    billingPortalErrorBanner:
+      "Impossible d'ouvrir le portail d'abonnement pour le moment. Réessayez dans quelques instants.",
     deleteAccount: "Supprimer mon compte",
     deleteAccountTitle: "Suppression de compte",
     deleteAccountBody:

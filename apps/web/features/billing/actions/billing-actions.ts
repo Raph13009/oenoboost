@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import type Stripe from "stripe";
 
 import { getAppOrigin } from "@/lib/billing/app-url";
+import { reconcileUserSubscription } from "@/lib/billing/reconcile-subscription";
 import { isPremiumStatus } from "@/lib/billing/subscription-status";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getStripe } from "@/lib/stripe/server";
@@ -69,10 +70,6 @@ export async function createPremiumCheckoutSession(
     console.warn("[billing][checkout] auth required");
     return { ok: false, code: "AUTH_REQUIRED" };
   }
-  if (user.plan === "premium") {
-    console.info("[billing][checkout] already premium", { userId: user.id });
-    return { ok: false, code: "ALREADY_PREMIUM" };
-  }
 
   const priceId = process.env.STRIPE_PRICE_ID_PREMIUM?.trim();
   if (!priceId) {
@@ -84,17 +81,27 @@ export async function createPremiumCheckoutSession(
     const latestSub = await getLatestSubscriptionForUser(user.id);
     console.info("[billing][checkout] latest subscription lookup", {
       userId: user.id,
+      plan: user.plan,
       hasLatestSubscription: Boolean(latestSub),
       latestStatus: latestSub?.status ?? null,
       hasStripeCustomerId: Boolean(latestSub?.stripe_customer_id),
     });
 
-    if (latestSub?.status && isPremiumStatus(latestSub.status)) {
-      console.info("[billing][checkout] active subscription already exists", {
+    // Source of truth = Stripe for the current API keys (sandbox vs live).
+    // Clears stale live rows when developing against sandbox, and syncs plan.
+    const reconciled = await reconcileUserSubscription(user.id, latestSub);
+    console.info("[billing][checkout] reconciled with Stripe", {
+      userId: user.id,
+      isPremium: reconciled.isPremium,
+      clearedStale: reconciled.clearedStale,
+      status: reconciled.status,
+    });
+
+    if (reconciled.isPremium || (!reconciled.clearedStale && user.plan === "premium")) {
+      console.info("[billing][checkout] already premium after reconcile", {
         userId: user.id,
-        status: latestSub.status,
       });
-      return { ok: false, code: "ALREADY_SUBSCRIBED" };
+      return { ok: false, code: "ALREADY_PREMIUM" };
     }
 
     const stripe = getStripe();
@@ -102,11 +109,12 @@ export async function createPremiumCheckoutSession(
     const safeReturnPath = safeReturnPathOr(returnPath, "/");
     const checkoutMetadata = { user_id: user.id };
     const subscriptionMetadata = { user_id: user.id };
+    const reusableCustomerId = reconciled.customerId;
     console.info("[billing][checkout] creating checkout session", {
       userId: user.id,
       origin,
       safeReturnPath,
-      hasCustomerReuse: Boolean(latestSub?.stripe_customer_id),
+      hasCustomerReuse: Boolean(reusableCustomerId),
       checkoutMetadata,
       subscriptionMetadata,
     });
@@ -116,8 +124,8 @@ export async function createPremiumCheckoutSession(
       success_url: `${origin}/api/billing/checkout-finalize?session_id={CHECKOUT_SESSION_ID}&return_to=/profil`,
       cancel_url: `${origin}/profil?checkout=cancel&return_to=${encodeURIComponent(safeReturnPath)}`,
       client_reference_id: user.id,
-      customer: latestSub?.stripe_customer_id || undefined,
-      customer_email: user.email || undefined,
+      customer: reusableCustomerId || undefined,
+      customer_email: reusableCustomerId ? undefined : user.email || undefined,
       metadata: checkoutMetadata,
       subscription_data: {
         metadata: subscriptionMetadata,
@@ -322,10 +330,18 @@ export async function syncCheckoutSuccessAction(
 export async function createBillingPortalSession(): Promise<CreateBillingPortalResult> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, code: "AUTH_REQUIRED" };
-  if (user.plan !== "premium") return { ok: false, code: "NOT_PREMIUM" };
 
   const latestSub = await getLatestSubscriptionForUser(user.id);
-  const customerId = latestSub?.stripe_customer_id;
+  let customerId = latestSub?.stripe_customer_id ?? null;
+
+  try {
+    const reconciled = await reconcileUserSubscription(user.id, latestSub);
+    if (!reconciled.isPremium) return { ok: false, code: "NOT_PREMIUM" };
+    customerId = reconciled.customerId;
+  } catch {
+    return { ok: false, code: "STRIPE_ERROR" };
+  }
+
   if (!customerId) return { ok: false, code: "NO_CUSTOMER" };
 
   try {
@@ -347,7 +363,10 @@ export async function openBillingPortalAction() {
   if (result.ok) {
     redirect(result.url);
   }
-  redirect("/profil");
+  if (result.code === "NOT_PREMIUM" || result.code === "NO_CUSTOMER") {
+    redirect("/profil?billing=need_premium");
+  }
+  redirect("/profil?billing=portal_error");
 }
 
 export async function cancelCurrentSubscriptionAction() {
@@ -357,9 +376,20 @@ export async function cancelCurrentSubscriptionAction() {
   }
 
   const latestSub = await getLatestSubscriptionForUser(user.id);
-  const stripeSubscriptionId = latestSub?.stripe_subscription_id;
-  if (!stripeSubscriptionId || !latestSub?.status || !isPremiumStatus(latestSub.status)) {
-    redirect("/profil");
+  let stripeSubscriptionId = latestSub?.stripe_subscription_id ?? null;
+
+  try {
+    const reconciled = await reconcileUserSubscription(user.id, latestSub);
+    if (!reconciled.isPremium || !reconciled.subscriptionId) {
+      redirect("/profil?billing=need_premium");
+    }
+    stripeSubscriptionId = reconciled.subscriptionId;
+  } catch {
+    redirect("/profil?subscription=cancel_error");
+  }
+
+  if (!stripeSubscriptionId) {
+    redirect("/profil?billing=need_premium");
   }
 
   try {

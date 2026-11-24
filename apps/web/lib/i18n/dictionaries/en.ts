@@ -837,7 +837,7 @@ const en: Dictionary = {
     quizStatLevels: "difficulty levels",
     quizStatLearn: "reasons to keep learning",
     quoteTextLine1: "“Wine is the teacher of taste,",
-    quoteTextLine2: "the liberator of the mind.”",
+    quoteTextLine2: "the liberator of the mind.\u00A0”",
     quoteAuthor: "Paul Claudel",
     discoverTitle: "Discover",
     footerTagline: "A documented journey into the heart of French terroirs.",
@@ -911,6 +911,7 @@ const en: Dictionary = {
     logout: "Log out",
     settings: "Settings",
     subscription: "Subscription",
+    upgradeToPremium: "Upgrade to Premium",
     manageSubscription: "Manage subscription",
     cancelSubscription: "Cancel subscription",
     cancelSubscriptionConfirm: "Cancel your subscription?",
@@ -923,6 +924,10 @@ const en: Dictionary = {
       "Your subscription has been canceled. Your plan is now free.",
     subscriptionCancelErrorBanner:
       "We could not cancel your subscription right now. Please try again in a few moments.",
+    billingNeedPremiumBanner:
+      "No active Premium subscription is linked to this account. Upgrade to Premium to continue.",
+    billingPortalErrorBanner:
+      "We could not open the billing portal right now. Please try again in a few moments.",
     deleteAccount: "Delete my account",
     deleteAccountTitle: "Account deletion",
     deleteAccountBody:
