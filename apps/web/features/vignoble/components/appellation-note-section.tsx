@@ -115,7 +115,7 @@ export function AppellationNoteSection({
       <h2 className="font-heading text-xl font-semibold">{labels.title}</h2>
 
       {canEdit ? (
-        <div className="mt-3 flex flex-col gap-3">
+        <div className="mt-3 flex flex-col gap-3" data-allow-copy>
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}

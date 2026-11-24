@@ -1,7 +1,3 @@
-export default function SolsLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return children;
-}
+import { EducationalProtectedLayout } from "@/components/shared/educational-protected-layout";
+
+export default EducationalProtectedLayout;
