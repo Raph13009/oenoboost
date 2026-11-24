@@ -131,9 +131,13 @@ function StepCard({
     <div
       className={cn(
         "overflow-hidden transition-[max-height,opacity,padding] duration-300 ease-out motion-reduce:transition-none",
-        open ? "max-h-[42rem] pt-4 opacity-100" : "max-h-0 pt-0 opacity-0",
+        open
+          ? "max-h-[42rem] pt-4 opacity-100"
+          : "pointer-events-none max-h-0 pt-0 opacity-0",
       )}
       aria-hidden={!open}
+      // Keep collapsed detail out of the tab/a11y tree (Premium CTAs were still reachable).
+      {...(!open ? { inert: true } : {})}
     >
       <div className="border-t border-border/40 pt-4">
         <PremiumGate

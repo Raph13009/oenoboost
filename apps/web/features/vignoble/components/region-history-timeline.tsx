@@ -21,6 +21,10 @@ type Props = {
   compact?: boolean;
 };
 
+/**
+ * Horizontal scroll timeline.
+ * One button per milestone; fixed period + dot slots keep the rail geometrically straight.
+ */
 export function RegionHistoryTimeline({
   milestones,
   locale,
@@ -43,6 +47,15 @@ export function RegionHistoryTimeline({
   const selectedPeriod = selected
     ? getContent(selected, "period_label", locale)
     : "";
+
+  // Column width ↔ rail inset (half column) must stay in sync.
+  const colW = compact ? "w-[7.25rem] md:w-36" : "w-36 md:w-44";
+  const railInset = compact
+    ? "left-[3.625rem] right-[3.625rem] md:left-[4.5rem] md:right-[4.5rem]"
+    : "left-[4.5rem] right-[4.5rem] md:left-[5.5rem] md:right-[5.5rem]";
+  // period h-9 (2.25rem) + mt-2 (0.5rem) + half of dot slot h-4 (0.5rem)
+  // compact: period h-8 (2rem) + mt-2 (0.5rem) + half of h-3.5 (~0.4375rem)
+  const railTop = compact ? "top-[2.9375rem]" : "top-[3.25rem]";
 
   return (
     <section
@@ -68,15 +81,18 @@ export function RegionHistoryTimeline({
           "overflow-x-auto overscroll-x-contain",
           compact ? "mt-2 pb-1" : "mt-5 -mx-1 pb-3",
         )}
+        aria-label={labels.title}
       >
-        <div className="relative flex min-w-full items-start gap-0 px-1">
+        <div className="relative inline-flex min-w-full px-1">
           <div
             className={cn(
-              "pointer-events-none absolute left-4 right-4 h-px bg-wine/25",
-              compact ? "top-[1.85rem]" : "top-[2.35rem] md:top-[2.5rem]",
+              "pointer-events-none absolute z-0 h-px -translate-y-1/2 bg-wine/30",
+              railTop,
+              railInset,
             )}
             aria-hidden
           />
+
           {milestones.map((milestone) => {
             const period = getContent(milestone, "period_label", locale);
             const title = getContent(milestone, "title", locale);
@@ -88,27 +104,48 @@ export function RegionHistoryTimeline({
                 type="button"
                 onClick={() => setSelectedId(milestone.id)}
                 className={cn(
-                  "relative z-10 flex shrink-0 flex-col items-center gap-1.5 px-2 text-center transition-colors",
-                  compact ? "w-28 md:w-36" : "w-36 md:w-44 gap-2",
+                  "relative z-10 flex shrink-0 flex-col items-center px-1.5 text-center transition-colors",
+                  colW,
                   active ? "text-wine" : "text-foreground hover:text-wine",
                 )}
                 aria-pressed={active}
               >
-                <span className="font-mono text-[10px] font-medium tabular-nums text-muted-foreground md:text-[11px]">
-                  {period || "—"}
-                </span>
                 <span
                   className={cn(
-                    "box-border block shrink-0 rounded-full border-2 border-wine/45 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.12)] transition-all duration-300",
-                    compact ? "h-3 w-3" : "h-3.5 w-3.5 md:h-4 md:w-4",
-                    active
-                      ? "border-wine bg-wine/25 shadow-[0_2px_8px_rgba(124,39,54,0.35)] ring-[3px] ring-wine/35"
-                      : "ring-0 ring-transparent",
+                    "flex w-full items-end justify-center",
+                    compact ? "h-8" : "h-9",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "line-clamp-2 font-mono text-[10px] font-medium leading-tight tabular-nums md:text-[11px]",
+                      active ? "text-wine" : "text-muted-foreground",
+                    )}
+                  >
+                    {period || "—"}
+                  </span>
+                </span>
+
+                <span
+                  className={cn(
+                    "mt-2 flex shrink-0 items-center justify-center",
+                    compact ? "h-3.5 w-3.5" : "h-4 w-4",
                   )}
                   aria-hidden
-                />
+                >
+                  <span
+                    className={cn(
+                      "box-border block rounded-full border-2 border-wine/45 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.12)] transition-all duration-300",
+                      compact ? "h-3 w-3" : "h-3.5 w-3.5",
+                      active
+                        ? "border-wine bg-wine/25 shadow-[0_2px_8px_rgba(124,39,54,0.35)] ring-[3px] ring-wine/35"
+                        : "ring-0 ring-transparent",
+                    )}
+                  />
+                </span>
+
                 {!compact && milestone.icon_url ? (
-                  <span className="relative mt-1 h-8 w-8 overflow-hidden rounded-lg border border-border/40 bg-muted/20">
+                  <span className="relative mt-2 h-8 w-8 overflow-hidden rounded-lg border border-border/40 bg-muted/20">
                     <Image
                       src={milestone.icon_url}
                       alt=""
@@ -118,10 +155,13 @@ export function RegionHistoryTimeline({
                     />
                   </span>
                 ) : null}
+
                 <span
                   className={cn(
-                    "font-heading font-semibold leading-snug",
-                    compact ? "text-xs md:text-sm" : "text-sm md:text-[15px]",
+                    "mt-2 line-clamp-3 font-heading font-semibold leading-snug",
+                    compact
+                      ? "min-h-10 text-xs md:text-sm"
+                      : "min-h-12 text-sm md:text-[15px]",
                   )}
                 >
                   {title || "—"}
