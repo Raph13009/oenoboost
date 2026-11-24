@@ -898,6 +898,7 @@ const en: Dictionary = {
     na: "...",
     back: "Back",
     close: "Close",
+    copyProtected: "Protected content — viewing only.",
   },
   profile: {
     plan: "Plan",
